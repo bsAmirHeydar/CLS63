@@ -27,17 +27,17 @@
 //+------------------------------------------------------------------+
 enum coreModeOption
   {
-   up,
-   down,
-   consolidation,
-   save_up,
-   save_down
+   UP,
+   DOWN,
+   CONSOLIDATION,
+   SAVE_UP,
+   SAVE_DOWN
   };
 enum coreForceOption
   {
-   low,
-   medium,
-   high
+   LOW,
+   MEDIUM,
+   HIGH
   };
-input coreModeOption coreMode = consolidation; //Core Mode
-input coreForceOption coreForce = medium; //Core Force
+input coreModeOption coreMode = CONSOLIDATION; //Core Mode
+input coreForceOption coreForce = MEDIUM; //Core Force
