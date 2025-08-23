@@ -1,42 +1,27 @@
 //+------------------------------------------------------------------+
-//|                                                      Ferrari.mq5 |
+//|                                                     Sequence.mqh |
 //|                                  Copyright 2025, MetaQuotes Ltd. |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2025, MetaQuotes Ltd."
-#property link "https://www.mql5.com"
-#property version "1.00"
+#property link      "https://www.mql5.com"
 //+------------------------------------------------------------------+
-//| Expert initialization function                                   |
+//| defines                                                          |
 //+------------------------------------------------------------------+
-#include "MQHs\Framework\Node.mqh"
-#include "MQHs\Framework\Structure.mqh"
-input bool ShowNode = true;
-input int countNode = 100;
-int OnInit() {
-   //---
-   for(int i = 0;i < countNode;i++) {
-      Peak(PERIOD_CURRENT, i);
-      Valley(PERIOD_CURRENT, i);
-   }
-   //CHOCH(true);
-   //CHOCH(false);
-   //---
-   return (INIT_SUCCEEDED);
-}
+// #define MacrosHello   "Hello, world!"
+// #define MacrosYear    2010
 //+------------------------------------------------------------------+
-//| Expert deinitialization function                                 |
+//| DLL imports                                                      |
 //+------------------------------------------------------------------+
-void OnDeinit(const int reason) {
-   ObjectsDeleteAll(0, 0);
-   //---
-}
+// #import "user32.dll"
+//   int      SendMessageA(int hWnd,int Msg,int wParam,int lParam);
+// #import "my_expert.dll"
+//   int      ExpertRecalculate(int wParam,int lParam);
+// #import
 //+------------------------------------------------------------------+
-//| Expert tick function                                             |
+//| EX5 imports                                                      |
 //+------------------------------------------------------------------+
-void OnTick() {
-   //---
-   CHOCH(true);
-   CHOCH(false);
-}
+// #import "stdlib.ex5"
+//   string ErrorDescription(int error_code);
+// #import
 //+------------------------------------------------------------------+
