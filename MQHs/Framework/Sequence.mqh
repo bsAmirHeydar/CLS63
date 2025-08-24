@@ -25,3 +25,27 @@
 //   string ErrorDescription(int error_code);
 // #import
 //+------------------------------------------------------------------+
+#include "Node.mqh"
+input bool showSycle = true;
+void ScanSequence(ENUM_TIMEFRAMES start_tf, bool up) {
+   if(up) {
+      int i = 0;
+      while(Peak(start_tf, 0) >= Peak(start_tf, i)) {
+         i++;
+      }
+      int sycleStartIndex = i;
+      if(showSycle) {
+         Peak(start_tf, i, true);
+      }
+   } else {
+      int i = 0;
+      while(Valley(start_tf, 0) <= Valley(start_tf, i)) {
+         i++;
+      }
+      int sycleStartIndex = i;
+      if(showSycle) {
+         Valley(start_tf, i, true);
+      }
+   }
+}
+//+------------------------------------------------------------------+
