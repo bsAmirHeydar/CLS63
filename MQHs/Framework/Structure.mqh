@@ -28,6 +28,8 @@
 #include "Node.mqh"
 class structure {
 public:
+   int type;
+   ENUM_TIMEFRAMES tf;
    double price;
    int index;
    datetime time;
@@ -74,9 +76,19 @@ public:
       }
       return -1;
    }
-   void scanA_Node(int _type, ENUM_TIMEFRAMES _tfM, ENUM_TIMEFRAMES _tfN) {
+   int findCandle(ENUM_TIMEFRAMES _tf, datetime _time) {
+      for(int i = 0;true;i++) {
+         if(iTime(_Symbol, _tf, i) <= _time) {
+            return i;
+         }
+      }
+      return -1;
+   }
+   void scan(int _type, ENUM_TIMEFRAMES _tfM, ENUM_TIMEFRAMES _tfN) {
       if(!(_type == 1 || _type == -1))
          return;
+      type = _type;
+      tf = _tfN;
       node ndM0();
       node ndM1();
       // scan Major nodes
@@ -98,5 +110,65 @@ public:
          }
       }
    }
+   bool isBreak() {
+      node nd();
+      nd.scan(type, tf, index);
+      for(int i = 0;i < nd.index;i++) {
+         double close = iClose(_Symbol, tf, i);
+         if((type == 1 && close > nd.price) || (type == -1 &&  close < nd.price)) {
+            return true;
+         }
+      }
+      return false;
+   }
+};
+//+------------------------------------------------------------------+
+class imbalance {
+public:
+   int fvgIndex;
+   double fvgPrice;
+   double obPrice;
+   double wallPrice;
+   bool isUse(int _type,ENUM_TIMEFRAMES _tf, int _fvgIndex, double _aPrice) {
+      for(int i = 0;i < _fvgIndex;i++) {
+         if((_type == 1 && iLow(_Symbol, _tf, i) < _aPrice) || (_type == -1 && iHigh(_Symbol, _tf, i) > _aPrice)) {
+            return true;
+         }
+      }
+      return false;
+   }
+   void scan(int _type, ENUM_TIMEFRAMES _tf, int _start_index, datetime _end_time) { // index : not nodes, = candles
+      structure strc();
+      int end_index = strc.findCandle(_tf, _end_time);
+      for(int i = _start_index;i < end_index;i++) {
+         if(_type == 1) {
+            if(iLow(_Symbol, _tf, i) > iHigh(_Symbol, _tf, i + 2)) {
+               if(true) { //!isUse(_type, _tf, i, iLow(_Symbol, _tf, i))) {
+                  fvgIndex = i;
+                  fvgPrice = iLow(_Symbol, _tf, i);
+                  obPrice = iHigh(_Symbol, _tf, i + 2);
+                  wallPrice = iLow(_Symbol, _tf, i + 2);
+               }
+            }
+         } else if(_type == -1) {
+            if(iHigh(_Symbol, _tf, i) < iLow(_Symbol, _tf, i + 2)) {
+               if(true) { //!isUse(_type, _tf, i, iHigh(_Symbol, _tf, i))) {
+                  fvgIndex = i;
+                  fvgPrice = iHigh(_Symbol, _tf, i);
+                  obPrice = iLow(_Symbol, _tf, i + 2);
+                  wallPrice = iHigh(_Symbol, _tf, i + 2);
+               }
+            }
+         }
+      }
+   }
+   bool is() {
+      if(fvgPrice != 0) {
+         return true;
+      }
+      return false;
+   }
+   imbalance(void) {}
+   ~imbalance(void) {}
 };
 //+------------------------------------------------------------------+
