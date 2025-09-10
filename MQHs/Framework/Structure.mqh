@@ -151,7 +151,7 @@ public:
       }
       return false;
    }
-   void scan(int _type, ENUM_TIMEFRAMES _tf, int _start_index, datetime _end_time) { // index : not nodes, = candles
+   void scan(int _type, ENUM_TIMEFRAMES _tf, int _start_index, datetime _end_time, bool first = false) { // index : not nodes, = candles
       structure strc();
       int end_index = strc.findCandle(_tf, _end_time);
       for(int i = _start_index;i < end_index;i++) {
@@ -162,6 +162,7 @@ public:
                   fvgPrice = iLow(_Symbol, _tf, i);
                   obPrice = iHigh(_Symbol, _tf, i + 2);
                   wallPrice = iLow(_Symbol, _tf, i + 2);
+                  if(first) break;
                }
             }
          } else if(_type == -1) {
@@ -171,6 +172,7 @@ public:
                   fvgPrice = iHigh(_Symbol, _tf, i);
                   obPrice = iLow(_Symbol, _tf, i + 2);
                   wallPrice = iHigh(_Symbol, _tf, i + 2);
+                  if(first) break;
                }
             }
          }
