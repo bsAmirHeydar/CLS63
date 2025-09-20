@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                       250910.mqh |
+//|                                                    assistant.mqh |
 //|                                  Copyright 2025, MetaQuotes Ltd. |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
@@ -12,7 +12,7 @@ input string name = "sample strategy";
 #include "..\Framework\zone.mqh"
 input ENUM_TIMEFRAMES zoneHTf = PERIOD_H4;
 input ENUM_TIMEFRAMES zoneLTf = PERIOD_M15;
-input ENUM_TIMEFRAMES entryTf = PERIOD_M1;
+//input ENUM_TIMEFRAMES entryTf = PERIOD_M1;
 class strategy
   {
 public:
@@ -21,38 +21,32 @@ public:
    double            sl;
    double            tp;
 
-   int               Entry()
+   int               Entry(int _index = 0)
      {
       zone znL();
       zone znH();
       if(znH.scan(zoneHTf) < 0.25)   // major zone
         {
-         if(znL.scan(zoneLTf) < -0.5)
+         if(znL.scan(zoneLTf) < -0.75)
            {
-            structure strc();
-            strc.scan(1, entryTf, entryTf);
-            if(strc.isBreak())
-              {
-               imbalance imb();
-               imb.scan(1, entryTf, 0, 30, true);
-               entry = imb.fvgPrice;
-               sl = znL.lower;
-               tp = znL.upper;
-               return 1;
-              }
+            node nd();
+            nd.liquidityScan(-1, zoneLTf, znL.get(), _index);
+            entry = nd.price;
+            nd.liquidityScan(-1, zoneLTf, entry, _index + 1);
+            sl = nd.price;
+            return 1;
            }
         }
       if(znH.scan(zoneHTf) > -0.25)   // major zone
         {
-         if(znL.scan(zoneLTf) > 0.5)
+         if(znL.scan(zoneLTf) > 0.75)
            {
-            structure strc();
-            strc.scan(  1, entryTf, entryTf);
-            if(strc.isBreak())
-              {
-               imbalance imb();
-               imb.scan(1, entryTf, 0, 30, true);
-              }
+            node nd();
+            nd.liquidityScan(1, zoneLTf, znL.get(), _index);
+            entry = nd.price;
+            nd.liquidityScan(1, zoneLTf, entry, _index + 1);
+            sl = nd.price;
+            return -1;
            }
         }
       return 0;
@@ -63,21 +57,15 @@ public:
      }
    int               Delete()
      {
-      imbalance imb();
-      imb.scan(1, entryTf, 0, 30, true);
-      if(imb.fvgPrice != entry)
-         return 1;
-      imb.scan(-1, entryTf, 0, 30, true);
-      if(imb.fvgPrice != entry)
-         return -1;
       return 0;
      }
-   int               Trail(double &_newPrice)
+   int               Trail(double & _newPrice)
      {
       return 0;
      }
-
                      strategy(void) {}
                     ~strategy(void) {}
   };
+//+------------------------------------------------------------------+
+
 //+------------------------------------------------------------------+
