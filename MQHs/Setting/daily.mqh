@@ -12,6 +12,7 @@ class daily
 public:
    double            minBalance;
    double            maxBalance;
+   datetime          today;
    void              init()
      {
       if(dailySl != 0.0)
@@ -21,6 +22,11 @@ public:
      }
    bool              dailyCheck()
      {
+      datetime now = TimeCurrent();
+      MqlDateTime t;
+      TimeToStruct(now, t);
+      if(t.day != today)
+         init();
       if(dailySl != 0.0 && AccountInfoDouble(ACCOUNT_BALANCE) <= minBalance)
          return false;
       if(dailyTp != 0.0 && AccountInfoDouble(ACCOUNT_BALANCE) >= maxBalance)

@@ -27,8 +27,13 @@
 //+------------------------------------------------------------------+
 #include "..\Tools\heiken.mqh"
 #include "..\Framework\Node.mqh"
+#include "..\Setting\order.mqh"
+#include "..\Tools\candle consistency.mqh"
+#include "..\Tools\donchain.mqh"
+
 
 input ENUM_TIMEFRAMES entryTF = PERIOD_CURRENT;
+input ENUM_TIMEFRAMES bigTF = PERIOD_H4;
 class strategy
   {
 public:
@@ -40,52 +45,72 @@ public:
    int               Entry()
      {
       node nd();
+      nd.scan(-1, entryTF, 0);
+      double val1 = nd.price;
+      nd.scan(-1, entryTF, 2);
+      double val2 = nd.price;
+      nd.scan(1, entryTF,0);
+      double peak1 = nd.price;
+      nd.scan(1, entryTF,2);
+      double peak2 = nd.price;
+      nd.scan(-1, bigTF, 0);
+      double bigval1 = nd.price;
+      nd.scan(-1, bigTF, 2);
+      double bigval2 = nd.price;
+      nd.scan(1, bigTF,0);
+      double bigpeak1 = nd.price;
+      nd.scan(1, bigTF,2);
+      double bigpeak2 = nd.price;
+      nd.scan(1, PERIOD_H4, 1);
+      double peakBig = nd.price;
+      nd.scan(-1, PERIOD_H4, 1);
+      double valBig = nd.price;
       bool buy =
-         iClose(_Symbol, entryTF, 1) > iOpen(_Symbol, entryTF, 1) &&
-         iClose(_Symbol, entryTF, 2) > iOpen(_Symbol, entryTF, 2) &&
-         iClose(_Symbol, entryTF, 3) > iOpen(_Symbol, entryTF, 3) &&
-        // heiken(PERIOD_M15, "c", 1) > heiken(PERIOD_M15, "o", 1) &&
-       //  heiken(PERIOD_M15, "c", 2) < heiken(PERIOD_M15, "o", 2) &&
-         //  heiken(entryTF, "c", 2) > heiken(entryTF, "o", 2) &&
-         //   heiken(entryTF, "c", 3) > heiken(entryTF, "o", 3) &&
-         //   heiken(entryTF, "c", 4) < heiken(entryTF, "o", 4) &&
+         //bigpeak1 > bigpeak2 &&
+         //HeikenColor(bigTF, 1) == 1 &&
+         // iHigh(_Symbol, entryTF, 1) > donchian(55, 1, entryTF, 1) &&
+        // iClose(_Symbol, entryTF, 1) > iOpen(_Symbol, entryTF, 1) &&
+         //iClose(_Symbol, entryTF, 2) > iOpen(_Symbol, entryTF, 2) &&
+        // iClose(_Symbol, entryTF, 3) > iOpen(_Symbol, entryTF, 3) &&
          iLow(_Symbol, entryTF, 1) > iLow(_Symbol, entryTF, 2) &&
          iLow(_Symbol, entryTF, 2) > iLow(_Symbol, entryTF, 3) &&
-         iLow(_Symbol, entryTF, 1) > iHigh(_Symbol, entryTF, 3);
+         iLow(_Symbol, entryTF, 1) > iHigh(_Symbol, entryTF, 3) 
+         //iHigh(_Symbol, entryTF, 1) > iHigh(_Symbol, entryTF, 2) &&
+       //  iHigh(_Symbol, entryTF, 2) > iHigh(_Symbol, entryTF, 3) 
+       //  (iClose(_Symbol, entryTF, 1) - iOpen(_Symbol, entryTF, 3)) / (iHigh(_Symbol, entryTF, 1) - iLow(_Symbol, entryTF, 3)) > 0.6 &&
+        // isConsistant(3, 0.7)
+         ;
       bool sell =
-         iClose(_Symbol, entryTF, 1) < iOpen(_Symbol, entryTF, 1) &&
-         iClose(_Symbol, entryTF, 2) < iOpen(_Symbol, entryTF, 2) &&
-         iClose(_Symbol, entryTF, 3) < iOpen(_Symbol, entryTF, 3) &&
-       //  heiken(PERIOD_M15, "c", 1) < heiken(PERIOD_M15, "o", 1) &&
-       //  heiken(PERIOD_M15, "c", 2) > heiken(PERIOD_M15, "o", 2) &&
-         //    heiken(entryTF, "c", 2) < heiken(entryTF, "o", 2) &&
-         //   heiken(entryTF, "c", 3) < heiken(entryTF, "o", 3) &&
-         // heiken(entryTF, "c", 4) > heiken(entryTF, "o", 4) &&
-         iLow(_Symbol, entryTF, 1) < iLow(_Symbol, entryTF, 2) &&
-         iLow(_Symbol, entryTF, 2) < iLow(_Symbol, entryTF, 3) &&
-         iLow(_Symbol, entryTF, 1) < iHigh(_Symbol, entryTF, 3);
+         //bigval1 < bigval2 &&
+         //HeikenColor(bigTF, 1) == -1 &&
+         //  iLow(_Symbol, entryTF, 1) < donchian(55, -1, entryTF, 1) &&
+    //     iClose(_Symbol, entryTF, 1) < iOpen(_Symbol, entryTF, 1) &&
+      //   iClose(_Symbol, entryTF, 2) < iOpen(_Symbol, entryTF, 2) &&
+        // iClose(_Symbol, entryTF, 3) < iOpen(_Symbol, entryTF, 3) &&
+         iHigh(_Symbol, entryTF, 1) < iHigh(_Symbol, entryTF, 2) &&
+         iHigh(_Symbol, entryTF, 2) < iHigh(_Symbol, entryTF, 3) &&
+         iHigh(_Symbol, entryTF, 1) < iLow(_Symbol, entryTF, 3) 
+       //  iLow(_Symbol, entryTF, 1) < iLow(_Symbol, entryTF, 2) &&
+       //  iLow(_Symbol, entryTF, 2) < iLow(_Symbol, entryTF, 3) 
+        // MathAbs(iClose(_Symbol, entryTF, 1) - iOpen(_Symbol, entryTF, 3)) / (iHigh(_Symbol, entryTF, 1) - iLow(_Symbol, entryTF, 3)) > 0.6  &&
+         //isConsistant(3, 0.7)
+         ;
       if(buy)
         {
-         nd.scan(-1, entryTF, 1);
-         double val1 = nd.price;
-         nd.scan(-1, entryTF, 2);
-         double val2 = nd.price;
+         //   deleteAll(1);
          orderType = "market";
-         entry = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-         sl = val1;//iLow(_Symbol, entryTF, 3);//
-         tp = entry + (entry - sl) * 5;
+         entry =  SymbolInfoDouble(_Symbol, SYMBOL_ASK);//val1 + (SymbolInfoDouble(_Symbol, SYMBOL_ASK) - val1) / 4;//
+         sl = donchian(3, -1, entryTF, 1);//val1;//iLow(_Symbol, entryTF, 3);//
+         tp =  entry + (entry - sl) * 1;
          return 1;
         }
       if(sell)
         {
-         nd.scan(1, entryTF,1);
-         double peak1 = nd.price;
-         nd.scan(1, entryTF,2);
-         double peak2 = nd.price;
+         //   deleteAll(-1);
          orderType = "market";
-         entry = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-         sl = peak1;//iHigh(_Symbol, entryTF, 3);//
-         tp = entry - (sl - entry) * 5;
+         entry = SymbolInfoDouble(_Symbol, SYMBOL_BID);//peak1 - (peak1 - SymbolInfoDouble(_Symbol, SYMBOL_BID)) / 4; //
+         sl = donchian(3, 1, entryTF, 1);//peak1;//iHigh(_Symbol, entryTF, 3);//
+         tp =  entry - (sl - entry) * 1;
          return -1;
         }
       return 0;
@@ -100,7 +125,8 @@ public:
      }
    int               Trail(double &_newPrice)
      {
-      return 0;
+      _newPrice = donchian(3, -1, entryTF, 1);
+      return 1;
      }
                      strategy(void) {}
                     ~strategy(void) {}
