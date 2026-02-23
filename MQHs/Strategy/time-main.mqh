@@ -26,14 +26,17 @@
 // #import
 //+------------------------------------------------------------------+
 #include "..\Setting\order.mqh"
-
-input int lnHourStart = 10; //London start session H
-input int lnMinuteStart = 0; //London start session M
-input int lnHourEnd = 0; //London end session H
+input ENUM_TIMEFRAMES mTf = PERIOD_H1;
+input ENUM_TIMEFRAMES nTf = PERIOD_CURRENT;
+input bool isLondon = false;
+input int lnHourStart = 7; //London start session H
+input int lnMinuteStart = 30; //London start session M
+input int lnHourEnd = 16; //London end session H
 input int lnMinuteEnd = 0; //London end session M
-input int nyHourStart = 15; //NY start session H
-input int nyMinuteStart = 0; //NY start session M
-input int nyHourEnd = 18; //NY end session H
+input bool isNY = true;
+input int nyHourStart = 13; //NY start session H
+input int nyMinuteStart = 30; //NY start session M
+input int nyHourEnd = 21; //NY end session H
 input int nyMinuteEnd = 0; //NY end session M
 class strategy
   {
@@ -48,26 +51,43 @@ public:
       datetime now = TimeCurrent();
       MqlDateTime t;
       TimeToStruct(now, t);
-      if((t.hour == lnHourStart && t.min == lnMinuteStart) || (t.hour == nyHourStart && t.min == nyMinuteStart)) // entry and start
+      if((isLondon && (t.hour == lnHourStart && t.min == lnMinuteStart))
+         || (isNY && (t.hour == nyHourStart && t.min == nyMinuteStart))) // entry and start
         {
-         double open = iOpen(_Symbol, PERIOD_M30, 1);
-         double close = iClose(_Symbol, PERIOD_M30, 1);
-         double high =  iHigh(_Symbol, PERIOD_M30, 1);
+         double open = iOpen(_Symbol, mTf, 1);
+         double close = iClose(_Symbol, nTf, 1);
+         double high =  iHigh(_Symbol, nTf, 1);
          double low =  iLow(_Symbol, PERIOD_M30, 1);
-         bool buy = close > open
-                    && (close - open) / (high - low) > 0.7;
-         bool sell = close < open
-                     && (open - close) / (high - low) > 0.7;
+         double a = iCustom(_Symbol, PERIOD_M1, "volatility");
+         double b = iCustom(_Symbol, PERIOD_M15, "volatility");
+         bool buy = close < open;
+         //  && (close - open) / (high - low) > 0.7;
+         bool sell = close > open;
+         //     && (open - close) / (high - low) > 0.7;
          if(buy)
-            return 1;
+           {
+            orderType = "market";
+            entry = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+            sl = low;
+         //   tp = entry + (entry - sl);
+            return 0;
+           }
          else
             if(sell)
-               return -1;
+              {
+               orderType = "market";
+               entry = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+               sl = high;
+            //   tp = entry - (sl - entry);
+               return 0;
+              }
         }
-      if((t.hour == lnHourEnd && t.min == lnMinuteEnd) || (t.hour == nyHourEnd && t.min == nyMinuteEnd)) // close and end
+      if(
+      (isLondon && (t.hour == lnHourEnd && t.min >= lnMinuteEnd) )
+      ||(isNY && (t.hour == nyHourEnd && t.min >= nyMinuteEnd))) // close and end    (t.hour == lnHourEnd && t.min >= lnMinuteEnd) ||
         {
          closeAll(1);
-         closeAll(-1);
+         //     closeAll(-1);
         }
       return 0;
      }
