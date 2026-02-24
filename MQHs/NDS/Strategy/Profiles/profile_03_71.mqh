@@ -28,7 +28,7 @@ public:
      }
    virtual int       OrderMode(void) const
      {
-      return NDS_ORDER_MARKET;
+      return NDS_ORDER_LIMIT;
      }
    virtual double    MinConfidence(void) const
      {

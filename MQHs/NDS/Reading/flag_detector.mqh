@@ -12,7 +12,7 @@ public:
       flag.is_valid = false;
       flag.direction = NDS_DIR_NONE;
 
-      if(!seq.is_valid || !hook.is_valid)
+      if(!hook.is_valid)
          return flag;
 
       if(hook.direction == NDS_DIR_BULL)

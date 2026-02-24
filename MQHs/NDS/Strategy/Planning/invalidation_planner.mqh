@@ -8,15 +8,18 @@ class NdsInvalidationPlanner
 public:
    int               Direction(const NdsSnapshot &shot) const
      {
-      // Structural invalidation direction used for cancel/remove operations
-      if(!shot.hook.is_valid)
+      if(!shot.cycle.has_hook2)
          return 0;
-      if(shot.hook.direction == NDS_DIR_BULL && shot.sequence.has_open_12_down)
+
+      double bid = SymbolInfoDouble(shot.symbol,SYMBOL_BID);
+      double ask = SymbolInfoDouble(shot.symbol,SYMBOL_ASK);
+
+      if(shot.cycle.direction == NDS_DIR_BULL && bid <= shot.cycle.hook2.z.price)
          return 1;
-      if(shot.hook.direction == NDS_DIR_BEAR && shot.sequence.has_open_12_up)
+      if(shot.cycle.direction == NDS_DIR_BEAR && ask >= shot.cycle.hook2.z.price)
          return -1;
       return 0;
-     }
+      }
   };
 
 #endif

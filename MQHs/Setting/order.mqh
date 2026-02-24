@@ -9,7 +9,6 @@ input int MagicNumber = 0;              // Strategy magic number
 input double commissionPerLot = 3.0;    // Estimated commission per lot
 input int point_scale = 1;              // Optional symbol point multiplier
 input int maxOrder = 1;                 // Max active orders per direction (positions + pendings)
-input bool isTrail = false;             // Enable trailing updates
 input int slippage = 10;                // Allowed slippage in points
 
 int VolumeDigits(const double step)
@@ -96,22 +95,35 @@ double CalculatePointValue()
    return tick_value * (point / tick_size) * (double)point_scale;
   }
 
-double volume(const double sl_distance)
+double LossPerLotAtSL(const int dir,const double open_price,const double sl_price)
   {
-   if(risk <= 0.0 || sl_distance <= 0.0)
+   if(!(dir == 1 || dir == -1))
+      return 0.0;
+   if(open_price <= 0.0 || sl_price <= 0.0)
       return 0.0;
 
-   double point = SymbolInfoDouble(_Symbol,SYMBOL_POINT);
-   double point_value = CalculatePointValue();
-   if(point <= 0.0 || point_value <= 0.0)
+   ENUM_ORDER_TYPE order_type = (dir == 1) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+   double profit = 0.0;
+   if(!OrderCalcProfit(order_type,_Symbol,1.0,open_price,sl_price,profit))
       return 0.0;
 
-   double sl_points = sl_distance / point;
-   if(sl_points <= 0.0)
+   return MathAbs(profit);
+  }
+
+double NormalizeVolumeStep(const double lots,const double step,const int digits)
+  {
+   if(step <= 0.0)
+      return NormalizeDouble(lots,digits);
+   double scaled = lots / step;
+   return NormalizeDouble(MathRound(scaled) * step,digits);
+  }
+
+double volume(const int dir,const double open_price,const double sl_price)
+  {
+   if(risk <= 0.0)
       return 0.0;
 
-   double commission_part = MathMax(0.0,commissionPerLot);
-   double risk_per_lot = sl_points * point_value + commission_part;
+   double risk_per_lot = LossPerLotAtSL(dir,open_price,sl_price);
    if(risk_per_lot <= 0.0)
       return 0.0;
 
@@ -125,7 +137,23 @@ double volume(const double sl_distance)
 
    int vol_digits = VolumeDigits(step_lot);
 
-   lots = MathFloor(lots / step_lot) * step_lot;
+   double nearest = NormalizeVolumeStep(lots,step_lot,vol_digits);
+   double floor_lot = NormalizeDouble(MathFloor(lots / step_lot) * step_lot,vol_digits);
+   double ceil_lot = NormalizeDouble(MathCeil(lots / step_lot) * step_lot,vol_digits);
+
+   if(floor_lot < min_lot)
+      floor_lot = 0.0;
+   if(ceil_lot > max_lot)
+      ceil_lot = 0.0;
+
+   // Prefer no-overrisk, then nearest valid step as fallback.
+   double best = floor_lot;
+   if(best <= 0.0)
+      best = nearest;
+   if(best <= 0.0 && ceil_lot > 0.0)
+      best = ceil_lot;
+
+   lots = best;
    lots = NormalizeDouble(lots,vol_digits);
 
    if(lots < min_lot)
@@ -165,6 +193,40 @@ int countOrders(const int dir)
          cnt++;
      }
 
+   return cnt;
+  }
+
+int countPositions(const int dir)
+  {
+   if(!IsDirectionValid(dir))
+      return 0;
+
+   int cnt = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0 || !PositionSelectByTicket(ticket))
+         continue;
+      if(IsSelectedPositionMine(dir))
+         cnt++;
+     }
+   return cnt;
+  }
+
+int countPendings(const int dir)
+  {
+   if(!IsDirectionValid(dir))
+      return 0;
+
+   int cnt = 0;
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+     {
+      ulong ticket = OrderGetTicket(i);
+      if(ticket == 0 || !OrderSelect(ticket))
+         continue;
+      if(IsSelectedOrderMine(dir))
+         cnt++;
+     }
    return cnt;
   }
 
@@ -236,22 +298,23 @@ bool BuildEntryRequest(const int dir,const string orderType,const double entry,c
      }
 
    if(orderType == "stop")
-     {
+      {
       if((dir == 1 && entry < market_price) || (dir == -1 && entry > market_price))
         {
          Print("Order blocked: invalid STOP entry side. entry=",DoubleToString(entry,_Digits),
                " market=",DoubleToString(market_price,_Digits));
          return false;
         }
-     }
+      }
 
-   double lots = volume(MathAbs(ref_price - sl));
+   double lots = volume(dir,ref_price,sl);
    if(lots <= 0.0)
-     {
+      {
       Print("Order blocked: computed lot is zero. risk=",risk,
-            " sl_distance=",DoubleToString(MathAbs(ref_price - sl),_Digits));
+            " open=",DoubleToString(ref_price,_Digits),
+            " sl=",DoubleToString(sl,_Digits));
       return false;
-     }
+      }
 
    req.symbol = _Symbol;
    req.magic = MagicNumber;
@@ -294,10 +357,20 @@ bool BuildEntryRequest(const int dir,const string orderType,const double entry,c
 
 bool buy(const string orderType,const double entry,const double sl,const double tp)
   {
+   int active_positions = countPositions(1);
+   if(active_positions >= maxOrder)
+     {
+      Print("BUY blocked: maxOrder reached by positions. active=",active_positions," maxOrder=",maxOrder);
+      return false;
+     }
+
+   if(countPendings(1) > 0)
+      deleteAll(1);
+
    int active = countOrders(1);
    if(active >= maxOrder)
      {
-      Print("BUY blocked: maxOrder reached. active=",active," maxOrder=",maxOrder);
+      Print("BUY blocked: maxOrder reached after pending refresh. active=",active," maxOrder=",maxOrder);
       return false;
      }
 
@@ -310,10 +383,20 @@ bool buy(const string orderType,const double entry,const double sl,const double 
 
 bool sell(const string orderType,const double entry,const double sl,const double tp)
   {
+   int active_positions = countPositions(-1);
+   if(active_positions >= maxOrder)
+     {
+      Print("SELL blocked: maxOrder reached by positions. active=",active_positions," maxOrder=",maxOrder);
+      return false;
+     }
+
+   if(countPendings(-1) > 0)
+      deleteAll(-1);
+
    int active = countOrders(-1);
    if(active >= maxOrder)
      {
-      Print("SELL blocked: maxOrder reached. active=",active," maxOrder=",maxOrder);
+      Print("SELL blocked: maxOrder reached after pending refresh. active=",active," maxOrder=",maxOrder);
       return false;
      }
 
@@ -413,62 +496,4 @@ void deleteAll(const int dir)
      }
   }
 
-bool trailAll(const int dir,const double new_price)
-  {
-   if(!isTrail)
-      return false;
-   if(!IsDirectionValid(dir))
-      return false;
-
-   bool updated = false;
-   double point = SymbolInfoDouble(_Symbol,SYMBOL_POINT);
-   double new_sl = NormalizeDouble(new_price,_Digits);
-
-   for(int i = PositionsTotal() - 1; i >= 0; i--)
-     {
-      ulong ticket = PositionGetTicket(i);
-      if(ticket == 0 || !PositionSelectByTicket(ticket))
-         continue;
-      if(!IsSelectedPositionMine(dir))
-         continue;
-
-      long ptype = PositionGetInteger(POSITION_TYPE);
-      double bid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-      double ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-      double cur_sl = PositionGetDouble(POSITION_SL);
-      double cur_tp = PositionGetDouble(POSITION_TP);
-
-      if(ptype == POSITION_TYPE_BUY)
-        {
-         if(new_sl >= bid)
-            continue;
-         if(cur_sl > 0.0 && new_sl <= cur_sl + point)
-            continue;
-        }
-      else
-        {
-         if(new_sl <= ask)
-            continue;
-         if(cur_sl > 0.0 && new_sl >= cur_sl - point)
-            continue;
-        }
-
-      MqlTradeRequest req;
-      MqlTradeResult res;
-      ZeroMemory(req);
-      ZeroMemory(res);
-
-      req.action = TRADE_ACTION_SLTP;
-      req.symbol = _Symbol;
-      req.magic = MagicNumber;
-      req.position = ticket;
-      req.sl = new_sl;
-      req.tp = cur_tp;
-
-      if(OrderSend(req,res) && (res.retcode == TRADE_RETCODE_DONE || res.retcode == TRADE_RETCODE_PLACED))
-         updated = true;
-     }
-
-   return updated;
-  }
 //+------------------------------------------------------------------+

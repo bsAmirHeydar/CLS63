@@ -47,8 +47,10 @@ public:
       m_symbol = symbol;
       m_cfg = cfg;
       m_nodes.Configure(symbol,cfg);
+      m_hook_detector.Configure(symbol,cfg);
       m_rally_detector.Configure(symbol);
-     }
+      m_cycle_assembler.Configure(symbol,cfg);
+      }
 
    NdsSnapshot       Build(void)
      {
@@ -67,13 +69,13 @@ public:
          shot.now_time = bar_time;
 
       shot.sequence = m_seq_engine.Build(m_cfg.ltf,m_nodes);
-      shot.hook = m_hook_detector.Detect(shot.sequence);
+      shot.hook = m_hook_detector.Detect(m_cfg.ltf);
       shot.rally = m_rally_detector.Detect(m_cfg.ltf,shot.hook);
       shot.flag = m_flag_detector.Detect(shot.sequence,shot.hook);
       shot.symmetry = m_symmetry_engine.Evaluate(m_cfg,shot.hook);
-      shot.cycle = m_cycle_assembler.Assemble(shot.hook,shot.rally,shot.flag);
+      shot.cycle = m_cycle_assembler.Assemble(shot.flag);
 
-      shot.is_valid = shot.sequence.is_valid || shot.hook.is_valid || shot.flag.is_valid || shot.rally.is_valid;
+      shot.is_valid = shot.cycle.has_hook2 || shot.sequence.is_valid || shot.hook.is_valid || shot.flag.is_valid || shot.rally.is_valid;
       return shot;
      }
   };

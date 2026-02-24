@@ -2,7 +2,6 @@
 #define __NDS_MAIN_STRATEGY_MQH__
 
 #include "..\\NDS\\Application\\nds_orchestrator.mqh"
-#include "..\\NDS\\Execution\\Management\\stop_target_manager.mqh"
 
 input group "NDS Core"
 input string nds_profile_name = "03-71";
@@ -19,6 +18,7 @@ input bool nds_gate_86 = false;
 input double nds_tol_price_ratio = 0.25;
 input double nds_tol_time_ratio = 0.40;
 input double nds_tol_near_86 = 0.08;
+input double nds_limit_pullback_ratio = 0.50;
 
 input group "NDS Visual"
 input bool nds_draw_nodes = true;
@@ -45,6 +45,7 @@ NdsConfig NdsBuildConfig()
    cfg.tolerance_price_ratio = nds_tol_price_ratio;
    cfg.tolerance_time_ratio = nds_tol_time_ratio;
    cfg.near_level86_tolerance = nds_tol_near_86;
+   cfg.limit_pullback_ratio = nds_limit_pullback_ratio;
    cfg.use_symmetry_gate = nds_gate_symmetry;
    cfg.use_86_gate = nds_gate_86;
    cfg.use_flag_gate = nds_gate_flag;
@@ -72,7 +73,6 @@ private:
    bool                 m_inited;
    datetime             m_eval_bar_time;
    NdsOrchestrator      m_orch;
-   NdsStopTargetManager m_stop_mgr;
    NdsTradeIntent       m_last_intent;
    NdsExecutionPlan     m_last_plan;
 
@@ -144,20 +144,13 @@ public:
      }
 
    int                  Delete()
-     {
+      {
       RefreshForCurrentBar();
       return m_orch.InvalidationDirection();
-     }
+      }
 
-   int                  Trail(double &_newPrice)
-     {
-      RefreshForCurrentBar();
-      NdsSnapshot s = m_orch.Snapshot();
-      return m_stop_mgr.TrailDirection(s,_newPrice);
-     }
-
-                        strategy(void)
-     {
+                       strategy(void)
+      {
       m_inited = false;
       m_eval_bar_time = 0;
       orderType = "market";

@@ -12,13 +12,13 @@ public:
      }
    virtual int       Evaluate(const NdsSnapshot &shot,const NdsConfig &cfg,NdsRuleReport &report) const
      {
-      bool pass = (shot.sequence.is_valid && shot.hook.is_valid && shot.hook.is_closed);
+      bool pass = (shot.hook.is_valid && shot.hook.is_closed);
       if(pass)
         {
-         report.Add(Name(),NDS_RULE_PASS,2.0,"valid closed 123");
+         report.Add(Name(),NDS_RULE_PASS,2.0,"ltf closed 123 hook");
          return NDS_RULE_PASS;
         }
-      report.Add(Name(),NDS_RULE_FAIL,0.0,"sequence incomplete");
+      report.Add(Name(),NDS_RULE_FAIL,0.0,"ltf 123 incomplete");
       return NDS_RULE_FAIL;
      }
   };

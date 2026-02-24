@@ -99,7 +99,7 @@ public:
         }
 
       double confidence = m_last_report.TotalScore();
-      m_last_intent = m_entry_planner.Build(m_last_snapshot,profile,confidence);
+      m_last_intent = m_entry_planner.Build(m_last_snapshot,profile,m_cfg,confidence);
       return m_last_intent;
      }
 

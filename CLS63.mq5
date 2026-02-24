@@ -60,12 +60,4 @@ void OnTick()
       buy(edge.orderType,edge.entry,edge.sl,edge.tp);
    if((direction == 0 || direction == -1) && sig == -1)
       sell(edge.orderType,edge.entry,edge.sl,edge.tp);
-
-   double new_price = 0.0;
-   int trail_dir = edge.Trail(new_price);
-   if(trail_dir == 1)
-      trailAll(1,new_price);
-   else
-      if(trail_dir == -1)
-         trailAll(-1,new_price);
   }

@@ -34,6 +34,7 @@ struct NdsHookState
    NdsNode           n1;
    NdsNode           n2;
    NdsNode           n3;
+   NdsNode           z;              // closure node after 3 (hook completion)
    double            level_86;
    bool              is_closed;
   };
@@ -74,6 +75,11 @@ struct NdsCycleState
    int               hooks_count;
    int               rallies_count;
    bool              has_flag;
+   bool              has_hook2;
+   bool              has_rally_after_hook2;
+   NdsHookState      hook1;
+   NdsHookState      hook2;
+   NdsRallyState     rally_after_hook2;
   };
 
 struct NdsSnapshot

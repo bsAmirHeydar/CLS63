@@ -8,15 +8,20 @@ class NdsExitPlanner
 public:
    int               Build(const NdsSnapshot &shot) const
      {
-      if(!shot.hook.is_valid)
+      if(!shot.cycle.has_hook2)
          return 0;
-      // Exit by opposite structural pressure
-      if(shot.hook.direction == NDS_DIR_BULL && shot.sequence.has_open_12_down)
-         return 1;    // close BUY
-      if(shot.hook.direction == NDS_DIR_BEAR && shot.sequence.has_open_12_up)
-         return -1;   // close SELL
+
+      double bid = SymbolInfoDouble(shot.symbol,SYMBOL_BID);
+      double ask = SymbolInfoDouble(shot.symbol,SYMBOL_ASK);
+
+      // Hard structural fail: Hook2 invalidated.
+      if(shot.cycle.direction == NDS_DIR_BULL && bid <= shot.cycle.hook2.z.price)
+         return 1;
+      if(shot.cycle.direction == NDS_DIR_BEAR && ask >= shot.cycle.hook2.z.price)
+         return -1;
+
       return 0;
-     }
+      }
   };
 
 #endif
