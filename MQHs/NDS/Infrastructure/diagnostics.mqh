@@ -31,6 +31,13 @@ public:
                 DoubleToString(s.hook.n2.price,_Digits) + " / " +
                 DoubleToString(s.hook.n3.price,_Digits) + " / " +
                 DoubleToString(s.hook.z.price,_Digits);
+      if(s.hook.is_valid)
+         txt += "\nLTF Hook(meta): tf=" + EnumToString(s.hook.scan_tf) +
+                " start=" + DoubleToString(s.hook.start_anchor.price,_Digits) +
+                " unbroken=" + (s.hook.start_unbroken ? "1" : "0") +
+                " state=" + (s.hook.is_open ? "OPEN" : (s.hook.is_closed ? "CLOSED" : "NONE")) +
+                " L=" + IntegerToString(s.hook.primary_layers) + "/" + IntegerToString(s.hook.secondary_layers) +
+                " M=" + IntegerToString(s.hook.primary_max_len) + "/" + IntegerToString(s.hook.secondary_max_len);
       txt += "\nSym(price/time): " + DoubleToString(s.symmetry.price_ratio,3) + " / " + DoubleToString(s.symmetry.time_ratio,3);
       txt += "\nHTF Cycle: dir=" + IntegerToString(s.cycle.direction) +
              " hooks=" + IntegerToString(s.cycle.hooks_count) +
@@ -46,6 +53,12 @@ public:
                 DoubleToString(s.cycle.hook2.n2.price,_Digits) + " / " +
                 DoubleToString(s.cycle.hook2.n3.price,_Digits) + " / " +
                 DoubleToString(s.cycle.hook2.z.price,_Digits);
+      if(s.cycle.has_hook2)
+         txt += "\nH2(meta): tf=" + EnumToString(s.cycle.hook2.scan_tf) +
+                " start=" + DoubleToString(s.cycle.hook2.start_anchor.price,_Digits) +
+                " unbroken=" + (s.cycle.hook2.start_unbroken ? "1" : "0") +
+                " state=" + (s.cycle.hook2.is_open ? "OPEN" : (s.cycle.hook2.is_closed ? "CLOSED" : "NONE")) +
+                " L=" + IntegerToString(s.cycle.hook2.primary_layers) + "/" + IntegerToString(s.cycle.hook2.secondary_layers);
       txt += "\nRules:";
       int count = rep.Count();
       for(int i = 0; i < count; i++)

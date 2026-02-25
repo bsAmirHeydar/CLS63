@@ -6,6 +6,7 @@
 #include "..\\Core\\nds_result.mqh"
 #include "..\\Infrastructure\\diagnostics.mqh"
 #include "..\\Reading\\node_detector.mqh"
+#include "..\\Reading\\hook_engine.mqh"
 
 struct NdsDebugNodeLayer
   {
@@ -206,6 +207,196 @@ private:
       ObjectSetInteger(0,name,OBJPROP_STYLE,style);
       }
 
+   string            TfShort(const ENUM_TIMEFRAMES tf) const
+      {
+      string s = EnumToString(tf);
+      StringReplace(s,"PERIOD_","");
+      return s;
+      }
+
+   bool              IsSameHook(const NdsHookState &a,const NdsHookState &b) const
+      {
+      return (a.direction == b.direction &&
+              a.scan_tf == b.scan_tf &&
+              a.n1.bar_time == b.n1.bar_time &&
+              a.n2.bar_time == b.n2.bar_time &&
+              a.n3.bar_time == b.n3.bar_time &&
+              a.z.bar_time == b.z.bar_time);
+      }
+
+   bool              IsCurrentHook(const NdsSnapshot &s,const NdsHookState &h) const
+      {
+      if(s.hook.is_valid && IsSameHook(s.hook,h))
+         return true;
+      if(s.cycle.hook1.is_valid && IsSameHook(s.cycle.hook1,h))
+         return true;
+      if(s.cycle.hook2.is_valid && IsSameHook(s.cycle.hook2,h))
+         return true;
+      return false;
+      }
+
+   ENUM_TIMEFRAMES   ResolveActiveHookTf(const NdsSnapshot &s) const
+      {
+      if(s.hook.is_valid && s.hook.scan_tf != PERIOD_CURRENT)
+         return s.hook.scan_tf;
+
+      NdsHookEngine hook_engine;
+      hook_engine.Configure(s.symbol,m_cfg);
+      return hook_engine.ResolveScanTf(s.tf_ltf);
+      }
+
+   void              DrawHistoryHookShape(const string key_prefix,const NdsHookState &hook) const
+      {
+      if(!hook.is_valid)
+         return;
+      if(hook.start_anchor.bar_time <= 0)
+         return;
+
+      color c = hook.direction == NDS_DIR_BULL ? clrPaleGreen : clrLightSalmon;
+      DrawHookSemicircle(key_prefix,hook,c);
+      }
+
+   int               DrawHookHistory(const NdsSnapshot &s,const ENUM_TIMEFRAMES active_tf) const
+      {
+      if(s.symbol == "")
+         return 0;
+
+      NdsHookEngine hook_engine;
+      hook_engine.Configure(s.symbol,m_cfg);
+
+      NdsHookState history[];
+      int total = hook_engine.GetHistory(history);
+      if(total <= 0)
+         return 0;
+
+      int drawn_total = 0;
+      for(int i = 0; i < total; i++)
+        {
+         NdsHookState h = history[i];
+         if(!h.is_valid)
+            continue;
+         if(active_tf != PERIOD_CURRENT && h.scan_tf != active_tf)
+            continue;
+         if(IsCurrentHook(s,h))
+            continue;
+
+         string key = "hist_" + TfShort(h.scan_tf) + "_" + IntegerToString(i);
+         DrawHistoryHookShape(key,h);
+         drawn_total++;
+        }
+
+      return drawn_total;
+      }
+
+   void              DrawHookSemicircle(const string key_prefix,const NdsHookState &hook,const color c) const
+      {
+      double off = (double)m_cfg.node_label_offset_points * _Point;
+      double eps = MathMax(_Point * 0.1,1e-12);
+      const double PI = 3.14159265358979323846;
+
+      datetime ta = hook.start_anchor.bar_time > 0 ? hook.start_anchor.bar_time : hook.n1.bar_time;
+      if(ta <= 0)
+         return;
+
+      int sh_start = iBarShift(_Symbol,_Period,ta,false);
+      if(sh_start < 0)
+         return;
+
+      double base = hook.start_anchor.price > 0.0 ? hook.start_anchor.price : hook.n1.price;
+      if(base <= 0.0)
+         return;
+
+      datetime t_limit = 0;
+      if(hook.is_open)
+         t_limit = iTime(_Symbol,_Period,0);
+      else
+        {
+         t_limit = hook.z.bar_time;
+         if(t_limit <= 0)
+            t_limit = hook.n3.bar_time;
+        }
+      if(t_limit <= 0)
+         t_limit = iTime(_Symbol,_Period,0);
+
+      int sh_end = iBarShift(_Symbol,_Period,t_limit,false);
+      if(sh_end < 0)
+         sh_end = 0;
+      if(sh_end > sh_start)
+        {
+         int tmp = sh_start;
+         sh_start = sh_end;
+         sh_end = tmp;
+        }
+
+      int bars_count = sh_start - sh_end + 1;
+      if(bars_count <= 0)
+         return;
+
+      int sgn = (hook.direction == NDS_DIR_BEAR) ? -1 : 1;
+      datetime t_start = ta;
+      datetime t_end = ta;
+      double amp = 0.0;
+
+      if(sgn > 0)
+        {
+         // Bull cycle top = highest high reached after hook start.
+         int hi_shift = iHighest(_Symbol,_Period,MODE_HIGH,bars_count,sh_end);
+         if(hi_shift >= 0)
+           {
+            double cycle_high = iHigh(_Symbol,_Period,hi_shift);
+            t_end = iTime(_Symbol,_Period,hi_shift);
+            amp = cycle_high - base;
+           }
+        }
+      else
+        {
+         // Bear cycle floor = lowest low reached after hook start.
+         int lo_shift = iLowest(_Symbol,_Period,MODE_LOW,bars_count,sh_end);
+         if(lo_shift >= 0)
+           {
+            double cycle_low = iLow(_Symbol,_Period,lo_shift);
+            t_end = iTime(_Symbol,_Period,lo_shift);
+            amp = base - cycle_low;
+           }
+        }
+
+      if(t_end <= t_start)
+        {
+         datetime fallback_t = hook.z.bar_time > ta ? hook.z.bar_time : hook.n3.bar_time;
+         if(fallback_t <= ta)
+            fallback_t = iTime(_Symbol,_Period,0);
+         if(fallback_t <= ta)
+            return;
+         t_end = fallback_t;
+      }
+
+      if(amp < 4.0 * off)
+         amp = 4.0 * off;
+      if(amp <= eps)
+         return;
+
+      const int seg = 24;
+      datetime prev_t = t_start;
+      double prev_p = base;
+      for(int i = 1; i <= seg; i++)
+        {
+         double u = (double)i / (double)seg;
+         long tx = (long)MathRound((double)t_start + ((double)(t_end - t_start)) * u);
+         double py = base + (double)sgn * amp * MathSin(PI * u);
+         datetime cur_t = (datetime)tx;
+         DrawTrend(Key(key_prefix + "_semi_" + IntegerToString(i)),prev_t,prev_p,cur_t,py,c,1,STYLE_DOT);
+         prev_t = cur_t;
+         prev_p = py;
+        }
+
+      datetime mid_t = (datetime)((long)t_start + (long)((t_end - t_start) / 2));
+      double top_y = base + amp + 2.0 * off;
+      double bot_y = base - amp - 2.0 * off;
+      string tf_txt = EnumToString(hook.scan_tf);
+      DrawLabel(Key(key_prefix + "_tf_top"),mid_t,top_y,tf_txt,clrAqua,10);
+      DrawLabel(Key(key_prefix + "_tf_bot"),mid_t,bot_y,tf_txt,clrAqua,10);
+      }
+
    void              DrawNodeDots(const string symbol,const ENUM_TIMEFRAMES tf,int &peak_count,int &valley_count) const
       {
       peak_count = 0;
@@ -245,28 +436,14 @@ private:
          DrawLayerLabels("V",valley_layers[v],true,v + 1,SequenceLayerColor(v + 1,true));
       }
 
-   void              DrawHookShape(const string key_prefix,const NdsHookState &hook,const color c,const string tag,const bool draw_86 = false) const
+   void              DrawHookShape(const string key_prefix,const NdsHookState &hook,const color c) const
       {
       if(!hook.is_valid)
          return;
 
-      double off = (double)m_cfg.node_label_offset_points * _Point;
-      DrawTrend(Key(key_prefix + "_12"),hook.n1.bar_time,hook.n1.price,hook.n2.bar_time,hook.n2.price,c,2);
-      DrawTrend(Key(key_prefix + "_23"),hook.n2.bar_time,hook.n2.price,hook.n3.bar_time,hook.n3.price,c,2);
-      DrawTrend(Key(key_prefix + "_3z"),hook.n3.bar_time,hook.n3.price,hook.z.bar_time,hook.z.price,c,2,STYLE_DASH);
-
-      DrawArrow(Key(key_prefix + "_a1"),hook.n1.bar_time,hook.n1.price,c,159);
-      DrawArrow(Key(key_prefix + "_a2"),hook.n2.bar_time,hook.n2.price,c,159);
-      DrawArrow(Key(key_prefix + "_a3"),hook.n3.bar_time,hook.n3.price,c,159);
-      DrawArrow(Key(key_prefix + "_az"),hook.z.bar_time,hook.z.price,clrOrangeRed,159);
-
-      DrawLabel(Key(key_prefix + "_l1"),hook.n1.bar_time,hook.n1.price + off,tag + "-1",c);
-      DrawLabel(Key(key_prefix + "_l2"),hook.n2.bar_time,hook.n2.price + off,tag + "-2",c);
-      DrawLabel(Key(key_prefix + "_l3"),hook.n3.bar_time,hook.n3.price + off,tag + "-3",c);
-      DrawLabel(Key(key_prefix + "_lz"),hook.z.bar_time,hook.z.price - off,tag + "-Z",clrOrangeRed);
-
-      if(draw_86 && hook.level_86 > 0.0)
-         DrawHLine(Key(key_prefix + "_86"),hook.level_86,m_cfg.color_aux,STYLE_DASH);
+      // Minimal hook view: only semicircle + TF label.
+      // Straight segments (1-2,2-3,3-Z), arrows and helper lines are intentionally hidden.
+      DrawHookSemicircle(key_prefix,hook,c);
       }
 
    string            PhaseName(const int phase) const
@@ -302,12 +479,28 @@ public:
    void              Render(const NdsSnapshot &s,const NdsTradeIntent &intent,const NdsRuleReport &report) const
      {
       Clear();
-      const bool nodes_only_mode = true; // temporary: focus only on node validation
+
+      long chart_sync = SeriesInfoInteger(_Symbol,_Period,SERIES_SYNCHRONIZED);
+      if(chart_sync == 0)
+        {
+         if(m_cfg.draw_text)
+            Comment("NDS Hook/Cycle View | waiting for series sync...");
+         else
+            Comment("");
+         return;
+        }
+
+      const bool hook_cycle_only_mode = true;
+      const bool nodes_only_mode = false;
+      const bool draw_hook_view = (m_cfg.draw_hook || hook_cycle_only_mode);
+      const bool draw_cycle_view = (m_cfg.draw_cycle || hook_cycle_only_mode);
+      ENUM_TIMEFRAMES active_hook_tf = ResolveActiveHookTf(s);
       double off = (double)m_cfg.node_label_offset_points * _Point;
+      int drawn_hooks = 0;
 
       int ltf_peak_count = 0;
       int ltf_valley_count = 0;
-      if(m_cfg.draw_nodes)
+      if(m_cfg.draw_nodes && !hook_cycle_only_mode)
          DrawNodeDots(s.symbol,s.tf_ltf,ltf_peak_count,ltf_valley_count);
 
       if(nodes_only_mode)
@@ -327,7 +520,7 @@ public:
          return;
         }
 
-      if(!nodes_only_mode && m_cfg.draw_nodes)
+      if(!nodes_only_mode && m_cfg.draw_nodes && !hook_cycle_only_mode)
         {
          DrawArrow(Key("p1"),s.sequence.last_peak_1.bar_time,s.sequence.last_peak_1.price,m_cfg.color_bear,234);
          DrawArrow(Key("p2"),s.sequence.last_peak_2.bar_time,s.sequence.last_peak_2.price,m_cfg.color_bear,234);
@@ -344,7 +537,7 @@ public:
          DrawLabel(Key("v3l"),s.sequence.last_valley_3.bar_time,s.sequence.last_valley_3.price - off,"V3",m_cfg.color_bull);
         }
 
-      if(m_cfg.draw_sequence)
+      if(m_cfg.draw_sequence && !hook_cycle_only_mode)
         {
          DrawTrend(Key("seq_p12"),s.sequence.last_peak_1.bar_time,s.sequence.last_peak_1.price,
                    s.sequence.last_peak_2.bar_time,s.sequence.last_peak_2.price,m_cfg.color_bear,1);
@@ -356,14 +549,14 @@ public:
                    s.sequence.last_valley_3.bar_time,s.sequence.last_valley_3.price,m_cfg.color_bull,1);
         }
 
-      if(m_cfg.draw_hook && s.hook.is_valid)
+      if(draw_hook_view && s.hook.is_valid && (active_hook_tf == PERIOD_CURRENT || s.hook.scan_tf == active_hook_tf))
         {
          color hc = s.hook.direction == NDS_DIR_BULL ? m_cfg.color_bull : m_cfg.color_bear;
-         DrawHookShape("ltf_hook",s.hook,hc,"LTF",true);
-         DrawLabel(Key("ht"),s.hook.n2.bar_time,s.hook.n2.price,"Hook " + IntegerToString(s.hook.hook_type),hc);
+         DrawHookShape("ltf_hook",s.hook,hc);
+         drawn_hooks++;
         }
 
-      if(m_cfg.draw_flag && s.flag.is_valid)
+      if(m_cfg.draw_flag && s.flag.is_valid && !hook_cycle_only_mode)
         {
          color fc = s.flag.direction == NDS_DIR_BULL ? m_cfg.color_bull : m_cfg.color_bear;
          DrawTrend(Key("f12"),s.flag.f1.bar_time,s.flag.f1.price,s.flag.f2.bar_time,s.flag.f2.price,fc,1);
@@ -372,19 +565,14 @@ public:
          DrawLabel(Key("fl"),s.flag.f3.bar_time,s.flag.f3.price,"FLAG",fc);
         }
 
-      if(m_cfg.draw_rally && s.rally.is_valid)
-        {
-         color rc = s.rally.direction == NDS_DIR_BULL ? m_cfg.color_bull : m_cfg.color_bear;
-         DrawTrend(Key("rally"),s.rally.start.bar_time,s.rally.start.price,s.rally.end.bar_time,s.rally.end.price,rc,2);
-         DrawLabel(Key("rally_l"),s.rally.end.bar_time,s.rally.end.price,"RALLY",rc);
-        }
+      // Rally drawing intentionally disabled: user requested hook-only visualization.
 
-      if(m_cfg.draw_symmetry && s.symmetry.is_valid)
+      if(m_cfg.draw_symmetry && s.symmetry.is_valid && !hook_cycle_only_mode)
         {
          DrawHLine(Key("sym_t"),s.symmetry.target_price,m_cfg.color_aux,STYLE_SOLID);
         }
 
-      if(m_cfg.draw_trade_levels && intent.can_trade)
+      if(m_cfg.draw_trade_levels && intent.can_trade && !hook_cycle_only_mode)
         {
          DrawHLine(Key("tr_entry"),intent.entry,clrDodgerBlue,STYLE_SOLID);
          DrawHLine(Key("tr_sl"),intent.sl,clrOrangeRed,STYLE_DASH);
@@ -392,38 +580,44 @@ public:
          DrawHLine(Key("tr_tp2"),intent.tp2,m_cfg.color_aux,STYLE_SOLID);
         }
 
-      if(m_cfg.draw_cycle && s.cycle.is_valid)
+      if(draw_cycle_view && s.cycle.is_valid)
         {
-         color htfc = s.cycle.direction == NDS_DIR_BULL ? m_cfg.color_bull : m_cfg.color_bear;
-         if(s.cycle.hook1.is_valid)
-            DrawHookShape("htf_hook1",s.cycle.hook1,clrDeepSkyBlue,"H1",false);
-         if(s.cycle.has_hook2)
+         if(s.cycle.hook1.is_valid && (active_hook_tf == PERIOD_CURRENT || s.cycle.hook1.scan_tf == active_hook_tf))
+           {
+            DrawHookShape("htf_hook1",s.cycle.hook1,clrDeepSkyBlue);
+            drawn_hooks++;
+           }
+         if(s.cycle.has_hook2 && (active_hook_tf == PERIOD_CURRENT || s.cycle.hook2.scan_tf == active_hook_tf))
             {
-            DrawHookShape("htf_hook2",s.cycle.hook2,clrOrange,"H2",true);
-            DrawHLine(Key("htf_hook2_z"),s.cycle.hook2.z.price,clrOrangeRed,STYLE_DASHDOT);
-            DrawLabel(Key("htf_hook2_lbl"),s.cycle.hook2.z.bar_time,s.cycle.hook2.z.price,"HTF Hook2 / Z2",htfc);
+            DrawHookShape("htf_hook2",s.cycle.hook2,clrOrange);
+            drawn_hooks++;
             }
-         if(s.cycle.has_rally_after_hook2)
-            {
-            DrawTrend(Key("htf_rally2"),
-                      s.cycle.rally_after_hook2.start.bar_time,s.cycle.rally_after_hook2.start.price,
-                      s.cycle.rally_after_hook2.end.bar_time,s.cycle.rally_after_hook2.end.price,
-                      htfc,2);
-            DrawLabel(Key("htf_rally2_lbl"),s.cycle.rally_after_hook2.end.bar_time,s.cycle.rally_after_hook2.end.price,"RALLY-1",htfc);
-            }
+         // HTF rally drawing intentionally disabled: user requested hook-only visualization.
 
-         datetime t0 = iTime(_Symbol,_Period,0);
-         double p0 = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-         DrawLabel(Key("phase"),t0,p0 + 25 * _Point,
-                   "Phase=" + PhaseName(s.cycle.phase) + " H=" + IntegerToString(s.cycle.hooks_count) +
-                   " R=" + IntegerToString(s.cycle.rallies_count),m_cfg.color_aux);
         }
+
+      // Always draw historical hooks too (all as semicircles).
+      if(draw_hook_view)
+         drawn_hooks += DrawHookHistory(s,active_hook_tf);
 
       if(m_cfg.draw_text)
         {
-         NdsDiagnostics diag;
-         string txt = diag.BuildSnapshotText(s,intent,report);
-         Comment(txt);
+         if(hook_cycle_only_mode)
+           {
+            string txt = "NDS Hook/Cycle View | HooksDrawn=" + IntegerToString(drawn_hooks);
+            txt += " | ActiveTF=" + TfShort(active_hook_tf);
+            if(s.hook.is_valid)
+               txt += " | LTF=" + TfShort(s.hook.scan_tf) + " M=" + IntegerToString(s.hook.primary_max_len);
+            if(s.cycle.has_hook2)
+               txt += " | H2TF=" + TfShort(s.cycle.hook2.scan_tf) + " M2=" + IntegerToString(s.cycle.hook2.primary_max_len);
+            Comment(txt);
+           }
+         else
+           {
+            NdsDiagnostics diag;
+            string txt = diag.BuildSnapshotText(s,intent,report);
+            Comment(txt);
+           }
         }
       else
          Comment("");

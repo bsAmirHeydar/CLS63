@@ -12,13 +12,17 @@ public:
      }
    virtual int       Evaluate(const NdsSnapshot &shot,const NdsConfig &cfg,NdsRuleReport &report) const
      {
-      bool pass = (shot.hook.is_valid && shot.hook.is_closed);
+      bool pass = (shot.cycle.has_hook2 &&
+                   shot.cycle.hook2.is_valid &&
+                   shot.cycle.hook2.is_closed &&
+                   shot.cycle.hook2.start_anchor.bar_time > 0 &&
+                   shot.cycle.hook2.start_unbroken);
       if(pass)
         {
-         report.Add(Name(),NDS_RULE_PASS,2.0,"ltf closed 123 hook");
+         report.Add(Name(),NDS_RULE_PASS,2.0,"htf hook2 valid (123 structure closed)");
          return NDS_RULE_PASS;
         }
-      report.Add(Name(),NDS_RULE_FAIL,0.0,"ltf 123 incomplete");
+      report.Add(Name(),NDS_RULE_FAIL,0.0,"hook2 structure invalid/incomplete");
       return NDS_RULE_FAIL;
      }
   };

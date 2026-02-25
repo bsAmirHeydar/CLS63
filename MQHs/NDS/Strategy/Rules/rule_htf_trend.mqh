@@ -20,20 +20,26 @@ public:
          return NDS_RULE_SKIP;
         }
 
-      if(!shot.cycle.has_hook2 || !shot.cycle.has_rally_after_hook2)
+      if(!shot.cycle.has_hook2)
         {
-         report.Add(Name(),NDS_RULE_FAIL,0.0,"htf hook2/rally missing");
+         report.Add(Name(),NDS_RULE_FAIL,0.0,"htf hook2 missing");
          return NDS_RULE_FAIL;
         }
 
-      bool pass = (shot.hook.direction == NDS_DIR_NONE || shot.hook.direction == shot.cycle.direction);
+      if(shot.cycle.hook2.start_anchor.bar_time <= 0 || !shot.cycle.hook2.start_unbroken)
+        {
+         report.Add(Name(),NDS_RULE_FAIL,0.0,"htf hook2 start invalid/broken");
+         return NDS_RULE_FAIL;
+        }
+
+      bool pass = (!shot.flag.is_valid || shot.flag.direction == shot.cycle.direction);
       if(pass)
         {
-         report.Add(Name(),NDS_RULE_PASS,1.0,"hook2+rally aligned");
+         report.Add(Name(),NDS_RULE_PASS,1.0,"hook2 valid and direction aligned");
          return NDS_RULE_PASS;
         }
 
-      report.Add(Name(),NDS_RULE_FAIL,0.0,"ltf/htf mismatch");
+      report.Add(Name(),NDS_RULE_FAIL,0.0,"flag/htf mismatch");
       return NDS_RULE_FAIL;
      }
   };

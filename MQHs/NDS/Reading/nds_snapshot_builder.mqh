@@ -72,8 +72,24 @@ public:
       shot.hook = m_hook_detector.Detect(m_cfg.ltf);
       shot.rally = m_rally_detector.Detect(m_cfg.ltf,shot.hook);
       shot.flag = m_flag_detector.Detect(shot.sequence,shot.hook);
-      shot.symmetry = m_symmetry_engine.Evaluate(m_cfg,shot.hook);
       shot.cycle = m_cycle_assembler.Assemble(shot.flag);
+
+      if(shot.cycle.has_hook2)
+        {
+         shot.flag = m_flag_detector.DetectForDirection(shot.sequence,shot.cycle.direction);
+         shot.cycle.has_flag = shot.flag.is_valid;
+
+         if(shot.cycle.has_flag)
+            shot.cycle.phase = NDS_PHASE_FLAG;
+         else
+            if(shot.cycle.has_rally_after_hook2)
+               shot.cycle.phase = NDS_PHASE_RALLY_1;
+            else
+               shot.cycle.phase = NDS_PHASE_HOOK_2;
+        }
+
+      NdsHookState sym_hook = shot.cycle.has_hook2 ? shot.cycle.hook2 : shot.hook;
+      shot.symmetry = m_symmetry_engine.Evaluate(m_cfg,sym_hook);
 
       shot.is_valid = shot.cycle.has_hook2 || shot.sequence.is_valid || shot.hook.is_valid || shot.flag.is_valid || shot.rally.is_valid;
       return shot;

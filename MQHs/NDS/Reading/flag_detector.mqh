@@ -6,16 +6,13 @@
 class NdsFlagDetector
   {
 public:
-   NdsFlagState      Detect(const NdsSequenceState &seq,const NdsHookState &hook) const
+   NdsFlagState      DetectForDirection(const NdsSequenceState &seq,const int dir) const
      {
       NdsFlagState flag;
       flag.is_valid = false;
       flag.direction = NDS_DIR_NONE;
 
-      if(!hook.is_valid)
-         return flag;
-
-      if(hook.direction == NDS_DIR_BULL)
+      if(dir == NDS_DIR_BULL)
         {
          bool corrective = (seq.last_peak_3.price <= seq.last_peak_2.price * 1.02 &&
                             seq.last_valley_3.price < seq.last_valley_2.price);
@@ -31,7 +28,7 @@ public:
          return flag;
         }
 
-      if(hook.direction == NDS_DIR_BEAR)
+      if(dir == NDS_DIR_BEAR)
         {
          bool corrective = (seq.last_valley_3.price >= seq.last_valley_2.price * 0.98 &&
                             seq.last_peak_3.price > seq.last_peak_2.price);
@@ -48,6 +45,14 @@ public:
         }
 
       return flag;
+     }
+
+   NdsFlagState      Detect(const NdsSequenceState &seq,const NdsHookState &hook) const
+     {
+      if(!hook.is_valid)
+         return DetectForDirection(seq,NDS_DIR_NONE);
+
+      return DetectForDirection(seq,hook.direction);
      }
   };
 

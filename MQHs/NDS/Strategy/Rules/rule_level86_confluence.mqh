@@ -32,16 +32,17 @@ public:
          return NDS_RULE_SKIP;
         }
 
-      if(!shot.hook.is_valid)
+      NdsHookState ref_hook = shot.cycle.has_hook2 ? shot.cycle.hook2 : shot.hook;
+      if(!ref_hook.is_valid)
         {
          report.Add(Name(),NDS_RULE_FAIL,0.0,"hook missing");
          return NDS_RULE_FAIL;
         }
 
-      double px = (shot.hook.direction == NDS_DIR_BULL) ?
+      double px = (ref_hook.direction == NDS_DIR_BULL) ?
                   SymbolInfoDouble(m_symbol,SYMBOL_BID) :
                   SymbolInfoDouble(m_symbol,SYMBOL_ASK);
-      bool near86 = (MathAbs(px - shot.hook.level_86) <= cfg.near_level86_tolerance * px);
+      bool near86 = (MathAbs(px - ref_hook.level_86) <= cfg.near_level86_tolerance * px);
 
       if(near86 || shot.symmetry.is_near_86)
         {

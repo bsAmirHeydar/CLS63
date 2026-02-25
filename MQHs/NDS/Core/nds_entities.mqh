@@ -23,6 +23,10 @@ struct NdsSequenceState
    NdsNode           last_valley_3;
    bool              has_open_12_up;
    bool              has_open_12_down;
+   int               peak_active_len;
+   int               valley_active_len;
+   int               peak_max_len;
+   int               valley_max_len;
    bool              is_valid;
   };
 
@@ -31,10 +35,18 @@ struct NdsHookState
    bool              is_valid;
    int               direction;      // NdsDirection
    int               hook_type;      // NdsHookType
+   ENUM_TIMEFRAMES   scan_tf;        // timeframe used for this hook detection
    NdsNode           n1;
    NdsNode           n2;
    NdsNode           n3;
    NdsNode           z;              // closure node after 3 (hook completion)
+   NdsNode           start_anchor;   // logical hook start from sequence boundary
+   bool              start_unbroken; // anchor has not been violated yet
+   int               primary_layers; // related sequence layers in hook direction
+   int               secondary_layers;
+   int               primary_max_len;
+   int               secondary_max_len;
+   bool              is_open;        // sequence max nodes == 2
    double            level_86;
    bool              is_closed;
   };

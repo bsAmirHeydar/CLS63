@@ -119,6 +119,10 @@ public:
       seq.last_valley_3 = EmptyNode(NDS_NODE_VALLEY);
       seq.has_open_12_up = false;
       seq.has_open_12_down = false;
+      seq.peak_active_len = 0;
+      seq.valley_active_len = 0;
+      seq.peak_max_len = 0;
+      seq.valley_max_len = 0;
       seq.is_valid = false;
 
       NdsNode peaks_raw[];
@@ -132,6 +136,10 @@ public:
       int valleys_nested_max = 0;
       int peak_count = BuildNestedFromEnd(peaks_raw,false,peaks_seq,peaks_nested_max);      // peaks: reverse-trend inside sequence
       int valley_count = BuildNestedFromEnd(valleys_raw,true,valleys_seq,valleys_nested_max); // valleys: reverse-trend inside sequence
+      seq.peak_active_len = peak_count;
+      seq.valley_active_len = valley_count;
+      seq.peak_max_len = peaks_nested_max;
+      seq.valley_max_len = valleys_nested_max;
 
       if(peak_count >= 1)
         {
@@ -174,7 +182,7 @@ public:
 
       seq.has_open_12_up = (valley_count == 2);
       seq.has_open_12_down = (peak_count == 2);
-      seq.is_valid = (peaks_down || valleys_up || peaks_nested_max >= 3 || valleys_nested_max >= 3);
+      seq.is_valid = (peaks_down || valleys_up || seq.peak_max_len >= 3 || seq.valley_max_len >= 3);
 
       return seq;
       }
