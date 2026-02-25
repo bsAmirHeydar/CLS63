@@ -32,6 +32,9 @@ private:
       hook.direction = NDS_DIR_NONE;
       hook.hook_type = NDS_HOOK_UNKNOWN;
       hook.scan_tf = PERIOD_CURRENT;
+      hook.seed_tf = PERIOD_CURRENT;
+      hook.ownership_promotions = 0;
+      hook.hook_seq_max = 0;
       hook.n1 = EmptyNode(NDS_NODE_NONE);
       hook.n2 = EmptyNode(NDS_NODE_NONE);
       hook.n3 = EmptyNode(NDS_NODE_NONE);
@@ -104,7 +107,8 @@ public:
       cycle.hook1 = hook1;
       cycle.hook2 = hook2;
 
-      NdsRallyState rally = m_rally_detector.Detect(m_cfg.htf,hook2);
+      ENUM_TIMEFRAMES rally_tf = (hook2.scan_tf != PERIOD_CURRENT ? hook2.scan_tf : m_cfg.htf);
+      NdsRallyState rally = m_rally_detector.Detect(rally_tf,hook2);
       cycle.rally_after_hook2 = rally;
       cycle.has_rally_after_hook2 = rally.is_valid;
       cycle.rallies_count = rally.is_valid ? 1 : 0;

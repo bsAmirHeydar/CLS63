@@ -36,6 +36,9 @@ struct NdsHookState
    int               direction;      // NdsDirection
    int               hook_type;      // NdsHookType
    ENUM_TIMEFRAMES   scan_tf;        // timeframe used for this hook detection
+   ENUM_TIMEFRAMES   seed_tf;        // initial timeframe before ownership promotion
+   int               ownership_promotions; // number of TF promotions applied
+   int               hook_seq_max;   // max(primary_max_len,secondary_max_len) at owned TF
    NdsNode           n1;
    NdsNode           n2;
    NdsNode           n3;
@@ -46,7 +49,7 @@ struct NdsHookState
    int               secondary_layers;
    int               primary_max_len;
    int               secondary_max_len;
-   bool              is_open;        // sequence max nodes == 2
+   bool              is_open;        // hook valid but close condition not yet satisfied
    double            level_86;
    bool              is_closed;
   };

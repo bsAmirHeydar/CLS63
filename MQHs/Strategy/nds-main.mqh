@@ -19,6 +19,7 @@ input double nds_tol_price_ratio = 0.25;
 input double nds_tol_time_ratio = 0.40;
 input double nds_tol_near_86 = 0.08;
 input double nds_limit_pullback_ratio = 0.50;
+input double nds_hook_close_retrace_ratio = 0.70; // require X% return of hook range to mark closed
 
 input group "NDS Visual"
 input bool nds_draw_nodes = true;
@@ -46,6 +47,7 @@ NdsConfig NdsBuildConfig()
    cfg.tolerance_time_ratio = nds_tol_time_ratio;
    cfg.near_level86_tolerance = nds_tol_near_86;
    cfg.limit_pullback_ratio = nds_limit_pullback_ratio;
+   cfg.hook_close_retrace_ratio = nds_hook_close_retrace_ratio;
    cfg.use_symmetry_gate = nds_gate_symmetry;
    cfg.use_86_gate = nds_gate_86;
    cfg.use_flag_gate = nds_gate_flag;

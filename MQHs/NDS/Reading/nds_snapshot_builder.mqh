@@ -4,8 +4,7 @@
 #include "..\\Core\\nds_config.mqh"
 #include "..\\Core\\nds_entities.mqh"
 #include "data_window.mqh"
-#include "node_detector.mqh"
-#include "sequence_engine.mqh"
+#include "sequence_detector.mqh"
 #include "hook_detector.mqh"
 #include "rally_detector.mqh"
 #include "flag_detector.mqh"
@@ -17,8 +16,7 @@ class NdsSnapshotBuilder
 private:
    string            m_symbol;
    NdsConfig         m_cfg;
-   NdsNodeDetector   m_nodes;
-   NdsSequenceEngine m_seq_engine;
+   NdsSequenceDetector m_seq_detector;
    NdsHookDetector   m_hook_detector;
    NdsRallyDetector  m_rally_detector;
    NdsFlagDetector   m_flag_detector;
@@ -46,7 +44,7 @@ public:
      {
       m_symbol = symbol;
       m_cfg = cfg;
-      m_nodes.Configure(symbol,cfg);
+      m_seq_detector.Configure(symbol,cfg);
       m_hook_detector.Configure(symbol,cfg);
       m_rally_detector.Configure(symbol);
       m_cycle_assembler.Configure(symbol,cfg);
@@ -68,7 +66,7 @@ public:
       if(bar_time > 0)
          shot.now_time = bar_time;
 
-      shot.sequence = m_seq_engine.Build(m_cfg.ltf,m_nodes);
+      shot.sequence = m_seq_detector.Detect(m_cfg.ltf);
       shot.hook = m_hook_detector.Detect(m_cfg.ltf);
       shot.rally = m_rally_detector.Detect(m_cfg.ltf,shot.hook);
       shot.flag = m_flag_detector.Detect(shot.sequence,shot.hook);
@@ -87,6 +85,15 @@ public:
             else
                shot.cycle.phase = NDS_PHASE_HOOK_2;
         }
+
+      // Keep snapshot TF labels aligned with owned hook/cycle TFs after per-hook promotion.
+      if(shot.hook.is_valid && shot.hook.scan_tf != PERIOD_CURRENT)
+         shot.tf_ltf = shot.hook.scan_tf;
+      if(shot.cycle.has_hook2 && shot.cycle.hook2.is_valid && shot.cycle.hook2.scan_tf != PERIOD_CURRENT)
+         shot.tf_htf = shot.cycle.hook2.scan_tf;
+      else
+         if(shot.cycle.hook1.is_valid && shot.cycle.hook1.scan_tf != PERIOD_CURRENT)
+            shot.tf_htf = shot.cycle.hook1.scan_tf;
 
       NdsHookState sym_hook = shot.cycle.has_hook2 ? shot.cycle.hook2 : shot.hook;
       shot.symmetry = m_symmetry_engine.Evaluate(m_cfg,sym_hook);

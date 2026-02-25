@@ -11,6 +11,7 @@ struct NdsConfig
    double            tolerance_time_ratio;
    double            near_level86_tolerance;
    double            limit_pullback_ratio;
+   double            hook_close_retrace_ratio; // 0..1, required retrace after Z to mark hook closed
    bool              use_symmetry_gate;
    bool              use_86_gate;
    bool              use_flag_gate;
