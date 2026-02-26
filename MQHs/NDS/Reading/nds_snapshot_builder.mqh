@@ -66,7 +66,7 @@ public:
       if(bar_time > 0)
          shot.now_time = bar_time;
 
-      shot.sequence = m_seq_detector.Detect(m_cfg.ltf);
+      shot.sequence = m_seq_detector.DetectAtTf(m_cfg.ltf);
       shot.hook = m_hook_detector.Detect(m_cfg.ltf);
       shot.rally = m_rally_detector.Detect(m_cfg.ltf,shot.hook);
       shot.flag = m_flag_detector.Detect(shot.sequence,shot.hook);

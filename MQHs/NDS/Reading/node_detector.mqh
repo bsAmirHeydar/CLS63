@@ -106,10 +106,29 @@ public:
       return take;
       }
 
+   void              DetectNodeSetAtTf(const ENUM_TIMEFRAMES tf,NdsNodeSet &out_set,const int need_count = 0) const
+      {
+      ZeroMemory(out_set);
+      out_set.tf = tf;
+      out_set.sampled_at = TimeCurrent();
+      FindRecentNodes(tf,NDS_NODE_PEAK,need_count,out_set.peaks);
+      FindRecentNodes(tf,NDS_NODE_VALLEY,need_count,out_set.valleys);
+      }
+
    void              DetectAllNodes(const ENUM_TIMEFRAMES tf,NdsNode &out_peaks[],NdsNode &out_valleys[],const int need_count = 0) const
       {
-      FindRecentNodes(tf,NDS_NODE_PEAK,need_count,out_peaks);
-      FindRecentNodes(tf,NDS_NODE_VALLEY,need_count,out_valleys);
+      NdsNodeSet set;
+      DetectNodeSetAtTf(tf,set,need_count);
+
+      int peak_count = ArraySize(set.peaks);
+      ArrayResize(out_peaks,peak_count);
+      for(int i = 0; i < peak_count; i++)
+         out_peaks[i] = set.peaks[i];
+
+      int valley_count = ArraySize(set.valleys);
+      ArrayResize(out_valleys,valley_count);
+      for(int j = 0; j < valley_count; j++)
+         out_valleys[j] = set.valleys[j];
       }
   };
 

@@ -16,6 +16,7 @@
 #include "HookEngine\\Utils\\hook_node_ops.mqh"
 #include "HookEngine\\Utils\\hook_layer_ops.mqh"
 #include "HookEngine\\Utils\\hook_boundary_ops.mqh"
+#include "Common\\nds_node_set_ops.mqh"
 
 class NdsHookEngine
   {

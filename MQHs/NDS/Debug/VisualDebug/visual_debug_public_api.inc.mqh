@@ -17,7 +17,7 @@
      {
       Clear();
 
-      const bool hook_cycle_only_mode = true;
+      const bool hook_cycle_only_mode = !(m_cfg.draw_nodes || m_cfg.draw_sequence || m_cfg.draw_flag || m_cfg.draw_symmetry || m_cfg.draw_trade_levels);
       const bool nodes_only_mode = false;
       const bool draw_hook_view = (m_cfg.draw_hook || hook_cycle_only_mode);
       const bool draw_cycle_view = (m_cfg.draw_cycle || hook_cycle_only_mode);

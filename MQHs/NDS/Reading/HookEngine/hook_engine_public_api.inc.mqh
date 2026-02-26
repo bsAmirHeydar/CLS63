@@ -42,9 +42,12 @@
          if(!HasEnoughBars(scan_tf))
             continue;
 
+         NdsNodeSet node_set;
+         NdsNodeSetOps node_set_ops;
+         m_nodes.DetectNodeSetAtTf(scan_tf,node_set,0);
          NdsNode peaks_raw[];
          NdsNode valleys_raw[];
-         m_nodes.DetectAllNodes(scan_tf,peaks_raw,valleys_raw,0);
+         node_set_ops.ToArrays(node_set,peaks_raw,valleys_raw);
 
          NdsHookState bull_hooks[];
          NdsHookState bear_hooks[];

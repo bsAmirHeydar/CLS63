@@ -17,6 +17,11 @@ private:
    NdsSequenceStatusPolicy m_status_policy;
 
 public:
+   NdsSequenceState  BuildFromNodeSet(const NdsNodeSet &node_set) const
+      {
+      return BuildFromNodes(node_set.peaks,node_set.valleys);
+      }
+
    NdsSequenceState  BuildFromNodes(const NdsNode &peaks_raw[],const NdsNode &valleys_raw[]) const
       {
       NdsSequenceState seq = m_state_factory.EmptyState();
@@ -43,10 +48,9 @@ public:
 
    NdsSequenceState  Build(const ENUM_TIMEFRAMES tf,const NdsNodeDetector &detector) const
       {
-      NdsNode peaks_raw[];
-      NdsNode valleys_raw[];
-      detector.DetectAllNodes(tf,peaks_raw,valleys_raw,0); // oldest -> newest
-      return BuildFromNodes(peaks_raw,valleys_raw);
+      NdsNodeSet node_set;
+      detector.DetectNodeSetAtTf(tf,node_set,0); // oldest -> newest
+      return BuildFromNodeSet(node_set);
       }
   };
 

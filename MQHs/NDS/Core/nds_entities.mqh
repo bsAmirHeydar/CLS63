@@ -13,6 +13,14 @@ struct NdsNode
    bool              is_open;        // open 1/2 not closed by 3
   };
 
+struct NdsNodeSet
+  {
+   ENUM_TIMEFRAMES   tf;
+   datetime          sampled_at;
+   NdsNode           peaks[];
+   NdsNode           valleys[];
+  };
+
 struct NdsSequenceState
   {
    NdsNode           last_peak_1;

@@ -6,10 +6,13 @@
 
       NdsNodeDetector detector;
       detector.Configure(symbol,m_cfg);
+      NdsNodeSetOps node_set_ops;
 
+      NdsNodeSet node_set;
+      detector.DetectNodeSetAtTf(tf,node_set,0);
       NdsNode peaks[];
       NdsNode valleys[];
-      detector.DetectAllNodes(tf,peaks,valleys,0);
+      node_set_ops.ToArrays(node_set,peaks,valleys);
 
       peak_count = ArraySize(peaks);
       valley_count = ArraySize(valleys);
@@ -33,7 +36,9 @@
            }
          else
            {
-            detector.DetectAllNodes(point_tf,point_peaks,point_valleys,0);
+            NdsNodeSet point_set;
+            detector.DetectNodeSetAtTf(point_tf,point_set,0);
+            node_set_ops.ToArrays(point_set,point_peaks,point_valleys);
            }
 
          for(int i = 0; i < ArraySize(point_peaks); i++)

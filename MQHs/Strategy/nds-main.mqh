@@ -80,6 +80,8 @@ class strategy
 private:
    bool                 m_inited;
    datetime             m_eval_bar_time;
+   double               m_eval_bar_high;
+   double               m_eval_bar_low;
    NdsOrchestrator      m_orch;
    NdsTradeIntent       m_last_intent;
    NdsExecutionPlan     m_last_plan;
@@ -91,6 +93,8 @@ private:
       NdsConfig cfg = NdsBuildConfig();
       m_orch.Configure(_Symbol,cfg);
       m_eval_bar_time = 0;
+      m_eval_bar_high = 0.0;
+      m_eval_bar_low = 0.0;
       m_inited = true;
      }
 
@@ -100,12 +104,21 @@ private:
       datetime bar_time = iTime(_Symbol,_Period,0);
       if(bar_time <= 0)
          return;
-      if(bar_time == m_eval_bar_time)
+      double bar_high = iHigh(_Symbol,_Period,0);
+      double bar_low = iLow(_Symbol,_Period,0);
+      double eps = MathMax(_Point * 0.1,1e-12);
+
+      bool same_bar = (bar_time == m_eval_bar_time);
+      bool same_high = (MathAbs(bar_high - m_eval_bar_high) <= eps);
+      bool same_low = (MathAbs(bar_low - m_eval_bar_low) <= eps);
+      if(same_bar && same_high && same_low)
          return;
 
       m_last_intent = m_orch.Evaluate();
       m_last_plan = m_orch.Plan();
       m_eval_bar_time = bar_time;
+      m_eval_bar_high = bar_high;
+      m_eval_bar_low = bar_low;
 
       if(!m_last_intent.can_trade)
         {
@@ -161,6 +174,8 @@ public:
       {
       m_inited = false;
       m_eval_bar_time = 0;
+      m_eval_bar_high = 0.0;
+      m_eval_bar_low = 0.0;
       orderType = "market";
       entry = 0.0;
       sl = 0.0;
