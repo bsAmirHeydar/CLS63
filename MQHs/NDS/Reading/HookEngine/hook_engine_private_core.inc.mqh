@@ -30,6 +30,22 @@
       PushHook(hook,hooks);
       }
 
+   void              PushHookUniqueAnchor(const NdsHookState &hook,NdsHookState &hooks[]) const
+      {
+      if(!hook.is_valid)
+         return;
+      for(int i = 0; i < ArraySize(hooks); i++)
+        {
+         if(!m_list_ops.IsSameHookAnchorIdentity(hooks[i],hook))
+            continue;
+
+         if(m_list_ops.PreferForSameAnchor(hooks[i],hook))
+            hooks[i] = hook;
+         return;
+        }
+      PushHook(hook,hooks);
+      }
+
    void              CopyNodes(const NdsNode &src[],NdsNode &dst[]) const
       {
       m_node_ops.CopyNodes(src,dst);
@@ -64,4 +80,3 @@
       {
       return m_market_rules.IsHookExpiredNow(hook);
       }
-

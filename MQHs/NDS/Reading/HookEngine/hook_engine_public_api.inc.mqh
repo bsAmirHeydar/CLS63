@@ -44,8 +44,7 @@
 
          NdsNode peaks_raw[];
          NdsNode valleys_raw[];
-         m_nodes.FindRecentNodes(scan_tf,NDS_NODE_PEAK,0,peaks_raw);
-         m_nodes.FindRecentNodes(scan_tf,NDS_NODE_VALLEY,0,valleys_raw);
+         m_nodes.DetectAllNodes(scan_tf,peaks_raw,valleys_raw,0);
 
          NdsHookState bull_hooks[];
          NdsHookState bear_hooks[];
@@ -54,13 +53,13 @@
 
          for(int i = 0; i < ArraySize(bull_hooks); i++)
            {
-            PushHookUniqueIdentity(bull_hooks[i],merged);
-            PushHookUniqueIdentity(bull_hooks[i],valid_for_memory);
+            PushHookUniqueAnchor(bull_hooks[i],merged);
+            PushHookUniqueAnchor(bull_hooks[i],valid_for_memory);
            }
          for(int j = 0; j < ArraySize(bear_hooks); j++)
            {
-            PushHookUniqueIdentity(bear_hooks[j],merged);
-            PushHookUniqueIdentity(bear_hooks[j],valid_for_memory);
+            PushHookUniqueAnchor(bear_hooks[j],merged);
+            PushHookUniqueAnchor(bear_hooks[j],valid_for_memory);
            }
         }
 

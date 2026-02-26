@@ -22,6 +22,9 @@ input double nds_limit_pullback_ratio = 0.50;
 input double nds_hook_close_retrace_ratio = 0.70; // require X% return of hook range to mark closed
 
 input group "NDS Visual"
+input ENUM_TIMEFRAMES nds_node_display_tf = PERIOD_CURRENT;
+input bool nds_draw_node_points = false;
+input bool nds_draw_node_points_on_chart_tf = true;
 input bool nds_draw_nodes = true;
 input bool nds_draw_sequence = true;
 input bool nds_draw_hook = true;
@@ -52,6 +55,9 @@ NdsConfig NdsBuildConfig()
    cfg.use_86_gate = nds_gate_86;
    cfg.use_flag_gate = nds_gate_flag;
    cfg.use_htf_trend_gate = nds_gate_htf;
+   cfg.node_display_tf = nds_node_display_tf;
+   cfg.draw_node_points = nds_draw_node_points;
+   cfg.draw_node_points_on_chart_tf = nds_draw_node_points_on_chart_tf;
    cfg.draw_nodes = nds_draw_nodes;
    cfg.draw_sequence = nds_draw_sequence;
    cfg.draw_hook = nds_draw_hook;

@@ -21,13 +21,36 @@ public:
       out_last_shift = -1;
 
       int bars_total = iBars(symbol,tf);
-      if(bars_total <= m_depth * 2 + 3)
+      if(bars_total <= m_depth * 2 + 2)
          return false;
 
       out_last_shift = bars_total - 1;
-      out_min_shift = m_depth + 1; // ignore forming-bar neighborhood
+      out_min_shift = m_depth; // confirmed as soon as right-side depth is available
       out_max_shift = MathMin(m_lookback,out_last_shift - m_depth);
       return (out_max_shift >= out_min_shift);
+      }
+
+   bool              ResolveCurrentOpenCheck(const string symbol,const ENUM_TIMEFRAMES tf,int &out_last_shift) const
+      {
+      out_last_shift = -1;
+      int bars_total = iBars(symbol,tf);
+      if(bars_total <= m_depth)
+         return false;
+      out_last_shift = bars_total - 1;
+      return true;
+      }
+
+   bool              ResolveOpenZone(const string symbol,const ENUM_TIMEFRAMES tf,int &out_open_min_shift,int &out_open_max_shift,int &out_last_shift) const
+      {
+      out_open_min_shift = 0;
+      out_open_max_shift = -1;
+      out_last_shift = -1;
+
+      if(!ResolveCurrentOpenCheck(symbol,tf,out_last_shift))
+         return false;
+
+      out_open_max_shift = MathMin(m_depth - 1,out_last_shift);
+      return (out_open_max_shift >= out_open_min_shift);
       }
   };
 

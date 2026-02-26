@@ -23,6 +23,20 @@ public:
       out_nodes[n].seq_no = 0;
       out_nodes[n].is_open = false;
       }
+
+   void              AppendCurrentOpenNode(const int kind,const ENUM_TIMEFRAMES tf,NdsNode &out_nodes[]) const
+      {
+      AppendOpenNode(kind,tf,0,out_nodes);
+      }
+
+   void              AppendOpenNode(const int kind,const ENUM_TIMEFRAMES tf,const int shift,NdsNode &out_nodes[]) const
+      {
+      int n = ArraySize(out_nodes);
+      ArrayResize(out_nodes,n + 1);
+      m_factory.FillDetectedNode(m_symbol,tf,kind,shift,out_nodes[n]);
+      out_nodes[n].seq_no = 0;
+      out_nodes[n].is_open = true;
+      }
   };
 
 #endif

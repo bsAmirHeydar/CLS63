@@ -18,7 +18,7 @@
       if(t <= 0 || p <= 0.0)
          return;
       ObjectCreate(0,name,OBJ_TEXT,0,t,p);
-      ObjectSetString(0,name,OBJPROP_TEXT,"o");
+      ObjectSetString(0,name,OBJPROP_TEXT,"*");
       ObjectSetString(0,name,OBJPROP_FONT,"Consolas");
       ObjectSetInteger(0,name,OBJPROP_FONTSIZE,8);
       ObjectSetInteger(0,name,OBJPROP_ANCHOR,ANCHOR_CENTER);

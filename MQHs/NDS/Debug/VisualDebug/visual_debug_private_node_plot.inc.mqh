@@ -9,31 +9,58 @@
 
       NdsNode peaks[];
       NdsNode valleys[];
-      detector.FindRecentNodes(tf,NDS_NODE_PEAK,0,peaks);
-      detector.FindRecentNodes(tf,NDS_NODE_VALLEY,0,valleys);
+      detector.DetectAllNodes(tf,peaks,valleys,0);
 
       peak_count = ArraySize(peaks);
       valley_count = ArraySize(valleys);
 
-      for(int i = 0; i < peak_count; i++)
+      if(draw_points)
         {
-         DrawExactPoint(Key("node_p_" + IntegerToString(i)),peaks[i].bar_time,peaks[i].price,m_cfg.color_bear);
+         ENUM_TIMEFRAMES point_tf = tf;
+         if(m_cfg.node_display_tf != PERIOD_CURRENT)
+            point_tf = m_cfg.node_display_tf;
+         else if(m_cfg.draw_node_points_on_chart_tf)
+            point_tf = (ENUM_TIMEFRAMES)_Period;
+
+         NdsNode point_peaks[];
+         NdsNode point_valleys[];
+         if(point_tf == tf)
+           {
+            ArrayResize(point_peaks,peak_count);
+            for(int i = 0; i < peak_count; i++) point_peaks[i] = peaks[i];
+            ArrayResize(point_valleys,valley_count);
+            for(int j = 0; j < valley_count; j++) point_valleys[j] = valleys[j];
+           }
+         else
+           {
+            detector.DetectAllNodes(point_tf,point_peaks,point_valleys,0);
+           }
+
+         for(int i = 0; i < ArraySize(point_peaks); i++)
+           {
+            color c = point_peaks[i].is_open ? m_cfg.color_aux : m_cfg.color_bear;
+            DrawExactPoint(Key("node_p_" + IntegerToString(i)),point_peaks[i].bar_time,point_peaks[i].price,c);
+           }
+
+         for(int j = 0; j < ArraySize(point_valleys); j++)
+           {
+            color c = point_valleys[j].is_open ? m_cfg.color_aux : m_cfg.color_bull;
+            DrawExactPoint(Key("node_v_" + IntegerToString(j)),point_valleys[j].bar_time,point_valleys[j].price,c);
+           }
         }
 
-      for(int j = 0; j < valley_count; j++)
+      if(draw_layers)
         {
-         DrawExactPoint(Key("node_v_" + IntegerToString(j)),valleys[j].bar_time,valleys[j].price,m_cfg.color_bull);
+         NdsDebugNodeLayer peak_layers[];
+         NdsDebugNodeLayer valley_layers[];
+         BuildNestedLayersFromEnd(peaks,false,peak_layers);
+         BuildNestedLayersFromEnd(valleys,true,valley_layers);
+
+         for(int p = 0; p < ArraySize(peak_layers); p++)
+            DrawLayerLabels("P",peak_layers[p],false,p + 1,SequenceLayerColor(p + 1,false));
+         for(int v = 0; v < ArraySize(valley_layers); v++)
+            DrawLayerLabels("V",valley_layers[v],true,v + 1,SequenceLayerColor(v + 1,true));
         }
-
-      NdsDebugNodeLayer peak_layers[];
-      NdsDebugNodeLayer valley_layers[];
-      BuildNestedLayersFromEnd(peaks,false,peak_layers);
-      BuildNestedLayersFromEnd(valleys,true,valley_layers);
-
-      for(int p = 0; p < ArraySize(peak_layers); p++)
-         DrawLayerLabels("P",peak_layers[p],false,p + 1,SequenceLayerColor(p + 1,false));
-      for(int v = 0; v < ArraySize(valley_layers); v++)
-         DrawLayerLabels("V",valley_layers[v],true,v + 1,SequenceLayerColor(v + 1,true));
       }
 
    void              DrawHookShape(const string key_prefix,const NdsHookState &hook,const color c) const

@@ -26,15 +26,18 @@
 
       int ltf_peak_count = 0;
       int ltf_valley_count = 0;
-      if(m_cfg.draw_nodes && !hook_cycle_only_mode)
-         DrawNodeDots(s.symbol,s.tf_ltf,ltf_peak_count,ltf_valley_count);
+      // For visual node debugging, always use the chart timeframe so point positions are
+      // interpreted against the same candle grid the user is looking at.
+      ENUM_TIMEFRAMES node_tf = (ENUM_TIMEFRAMES)_Period;
+      if((m_cfg.draw_node_points || m_cfg.draw_nodes) && (!hook_cycle_only_mode || m_cfg.draw_node_points))
+         DrawNodeDots(s.symbol,node_tf,m_cfg.draw_node_points,(!hook_cycle_only_mode && m_cfg.draw_nodes),ltf_peak_count,ltf_valley_count);
 
       if(nodes_only_mode)
         {
          if(m_cfg.draw_text)
            {
             string txt = "NDS Node Debug";
-            txt += "\nTF: " + EnumToString(s.tf_ltf);
+            txt += "\nTF: " + EnumToString(node_tf);
             txt += "\nPeaks: " + IntegerToString(ltf_peak_count);
             txt += "\nValleys: " + IntegerToString(ltf_valley_count);
             txt += "\nSeq labels: k.j (only sequence layers)";

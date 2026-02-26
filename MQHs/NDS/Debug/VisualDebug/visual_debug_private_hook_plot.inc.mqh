@@ -273,4 +273,4 @@
       DrawLabel(Key(key_prefix + "_tf"),t_lab,y_lab,tf_txt,clrAqua,10);
       }
 
-   void              DrawNodeDots(const string symbol,const ENUM_TIMEFRAMES tf,int &peak_count,int &valley_count) const
+   void              DrawNodeDots(const string symbol,const ENUM_TIMEFRAMES tf,const bool draw_points,const bool draw_layers,int &peak_count,int &valley_count) const

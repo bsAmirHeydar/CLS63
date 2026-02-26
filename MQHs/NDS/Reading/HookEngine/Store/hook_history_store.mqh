@@ -101,7 +101,15 @@ public:
          if(g_nds_hook_hist_symbols[i] != m_symbol)
             continue;
          if(!m_list_ops.IsSameHookIdentity(g_nds_hook_hist_items[i],hook))
+           {
+            if(m_list_ops.IsSameHookAnchorIdentity(g_nds_hook_hist_items[i],hook))
+              {
+               if(m_list_ops.PreferForSameAnchor(g_nds_hook_hist_items[i],hook))
+                  g_nds_hook_hist_items[i] = hook;
+               return;
+              }
             continue;
+           }
 
          g_nds_hook_hist_items[i] = hook;
          return;

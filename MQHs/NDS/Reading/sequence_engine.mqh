@@ -45,8 +45,7 @@ public:
       {
       NdsNode peaks_raw[];
       NdsNode valleys_raw[];
-      detector.FindRecentNodes(tf,NDS_NODE_PEAK,0,peaks_raw);     // oldest -> newest
-      detector.FindRecentNodes(tf,NDS_NODE_VALLEY,0,valleys_raw); // oldest -> newest
+      detector.DetectAllNodes(tf,peaks_raw,valleys_raw,0); // oldest -> newest
       return BuildFromNodes(peaks_raw,valleys_raw);
       }
   };

@@ -105,18 +105,13 @@
       if(!(hook_dir == NDS_DIR_BULL || hook_dir == NDS_DIR_BEAR))
          return 0;
 
-      bool valley_mode = (hook_dir == NDS_DIR_BULL);
       for(int end_idx = 1; end_idx < sec_n; end_idx++)
         {
-         NdsNode start_anchor;
-         if(!FindBoundaryFromEnd(secondary_raw,end_idx,valley_mode,start_anchor))
-            continue;
-
          NdsHookState hook;
-         if(!PromoteHookToOwnedTf(hook_dir,start_anchor,secondary_raw[end_idx],scan_tf,hook))
+         if(!PromoteHookToOwnedTf(hook_dir,secondary_raw[end_idx],scan_tf,hook))
             continue;
 
-         PushHookUniqueIdentity(hook,out_hooks);
+         PushHookUniqueAnchor(hook,out_hooks);
         }
 
       return ArraySize(out_hooks);
@@ -126,4 +121,3 @@
       {
       return m_market_rules.IsAnchorUnbroken(tf,anchor,dir);
       }
-

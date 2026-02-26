@@ -42,6 +42,44 @@ public:
       return true;
       }
 
+   bool              IsSameHookAnchorIdentity(const NdsHookState &a,const NdsHookState &b) const
+      {
+      if(a.direction != b.direction)
+         return false;
+      if(a.scan_tf != b.scan_tf)
+         return false;
+      if(a.start_anchor.kind != b.start_anchor.kind)
+         return false;
+      if(a.start_anchor.bar_time != b.start_anchor.bar_time)
+         return false;
+      return true;
+      }
+
+   bool              PreferForSameAnchor(const NdsHookState &current,const NdsHookState &candidate) const
+      {
+      // One anchor = one hook. Keep the more progressed/newer snapshot.
+      datetime tc = HookSortTime(current);
+      datetime tn = HookSortTime(candidate);
+      if(tn > tc)
+         return true;
+      if(tn < tc)
+         return false;
+
+      if(candidate.hook_seq_max > current.hook_seq_max)
+         return true;
+      if(candidate.hook_seq_max < current.hook_seq_max)
+         return false;
+
+      if(candidate.is_closed && !current.is_closed)
+         return true;
+      if(candidate.is_open && !current.is_open && !candidate.is_closed)
+         return true;
+
+      if(candidate.ownership_promotions > current.ownership_promotions)
+         return true;
+      return false;
+      }
+
    void              SortByCloseTime(NdsHookState &hooks[]) const
       {
       int n = ArraySize(hooks);

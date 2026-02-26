@@ -35,8 +35,9 @@ private:
    NdsHookBoundaryOps m_boundary_ops;
 
 #include "HookEngine\\hook_engine_private_core.inc.mqh"
-#include "HookEngine\\hook_engine_private_state_history.inc.mqh"
+#include "HookEngine\\hook_engine_private_ownership.inc.mqh"
 #include "HookEngine\\hook_engine_private_build.inc.mqh"
+#include "HookEngine\\hook_engine_private_history_sync.inc.mqh"
 
 public:
 #include "HookEngine\\hook_engine_public_api.inc.mqh"

@@ -25,6 +25,21 @@ private:
         }
       }
 
+   void              AppendOpenKindCandidates(const ENUM_TIMEFRAMES tf,const int kind,const int open_min_shift,const int open_max_shift,const int last_shift,NdsNode &out_nodes[]) const
+      {
+      if(last_shift < 1)
+         return;
+      for(int s = open_max_shift; s >= open_min_shift; s--)
+        {
+         if(!m_pivot_policy.IsOpenPivot(tf,kind,s,last_shift))
+            continue;
+         // Keep all temporary pivots in the right-edge unconfirmed zone.
+         // Do not remove previous nodes from the node list; each candidate remains visible
+         // until it naturally drops out of the recalculated structure.
+         m_record_builder.AppendOpenNode(kind,tf,s,out_nodes);
+        }
+      }
+
 public:
                      NdsNodeDetector(void)
       {
@@ -53,11 +68,27 @@ public:
       int min_shift = 0;
       int max_shift = -1;
       int last_shift = -1;
-      if(!m_window_policy.Resolve(m_symbol,tf,min_shift,max_shift,last_shift))
-         return 0;
 
       NdsNode scanned[];
-      ScanKind(tf,kind,min_shift,max_shift,last_shift,scanned); // oldest -> newest
+      ArrayResize(scanned,0);
+
+      bool can_scan_confirmed = m_window_policy.Resolve(m_symbol,tf,min_shift,max_shift,last_shift);
+      if(can_scan_confirmed)
+         ScanKind(tf,kind,min_shift,max_shift,last_shift,scanned); // oldest -> newest
+      else
+        {
+         int open_last_shift = -1;
+         if(m_window_policy.ResolveCurrentOpenCheck(m_symbol,tf,open_last_shift))
+            last_shift = open_last_shift;
+         else
+            return 0;
+        }
+
+      int open_min_shift = 0;
+      int open_max_shift = -1;
+      int open_last_shift = -1;
+      if(m_window_policy.ResolveOpenZone(m_symbol,tf,open_min_shift,open_max_shift,open_last_shift))
+         AppendOpenKindCandidates(tf,kind,open_min_shift,open_max_shift,open_last_shift,scanned);
 
       int total = ArraySize(scanned);
       if(total <= 0)
@@ -73,6 +104,12 @@ public:
         }
 
       return take;
+      }
+
+   void              DetectAllNodes(const ENUM_TIMEFRAMES tf,NdsNode &out_peaks[],NdsNode &out_valleys[],const int need_count = 0) const
+      {
+      FindRecentNodes(tf,NDS_NODE_PEAK,need_count,out_peaks);
+      FindRecentNodes(tf,NDS_NODE_VALLEY,need_count,out_valleys);
       }
   };
 

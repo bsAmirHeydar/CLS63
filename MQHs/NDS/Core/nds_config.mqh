@@ -16,6 +16,9 @@ struct NdsConfig
    bool              use_86_gate;
    bool              use_flag_gate;
    bool              use_htf_trend_gate;
+   ENUM_TIMEFRAMES   node_display_tf;
+   bool              draw_node_points;
+   bool              draw_node_points_on_chart_tf;
    bool              draw_nodes;
    bool              draw_sequence;
    bool              draw_hook;

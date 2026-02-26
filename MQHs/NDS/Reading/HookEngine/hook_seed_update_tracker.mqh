@@ -74,11 +74,12 @@ private:
       for(int i = 0; i < n; i++)
         {
          long t = (long)nodes[i].bar_time;
+         long bi = (long)nodes[i].bar_index;
          long p = (long)MathRound(nodes[i].price / _Point);
-         long k = (long)nodes[i].kind * 1315423911 + (long)nodes[i].seq_no * 2654435761;
+         long k = (long)nodes[i].kind * 1315423911 + (long)nodes[i].seq_no * 2654435761 + (nodes[i].is_open ? 97531 : 0);
          sig ^= (t + 0x9e3779b97f4a7c15);
          sig *= 1099511628211;
-         sig ^= (p + (k << 1));
+         sig ^= (p + (k << 1) + (bi << 3));
          sig *= 1099511628211;
         }
       return sig;

@@ -30,8 +30,7 @@ public:
       {
       NdsNode peaks_raw[];
       NdsNode valleys_raw[];
-      m_nodes.FindRecentNodes(tf,NDS_NODE_PEAK,0,peaks_raw);
-      m_nodes.FindRecentNodes(tf,NDS_NODE_VALLEY,0,valleys_raw);
+      m_nodes.DetectAllNodes(tf,peaks_raw,valleys_raw,0);
 
       bool changed = m_tracker.EvalAndCommit(tf,peaks_raw,valleys_raw);
 
